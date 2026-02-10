@@ -1,0 +1,320 @@
+{
+  "metadata_info": {
+    "version": "2.0",
+    "created_at": "2026-02-05",
+    "last_updated": "2026-02-05",
+    "description": "E-commerce Text-to-SQL System - Clean & Flat Metadata Structure"
+  },
+
+  "database_info": {
+    "database_name": "postgres",
+    "total_tables": 9,
+    "total_orders": 99441,
+    "total_customers": 99441,
+    "unique_customers": 96096,
+    "total_products": 32951,
+    "total_sellers": 3095,
+    "date_range": "2016-09-04 to 2018-10-17",
+    "currency": "BRL (Brazilian Real, R$)"
+  },
+
+  "table_columns_index": {
+    "orders": ["order_id", "customer_id", "order_status", "order_purchase_timestamp", "order_approved_at", "order_delivered_carrier_date", "order_delivered_customer_date", "order_estimated_delivery_date"],
+
+    "customers": ["customer_id", "customer_unique_id", "customer_zip_code_prefix", "customer_city", "customer_state"],
+
+    "order_items": ["order_id", "order_item_id", "product_id", "seller_id", "shipping_limit_date", "price", "freight_value"],
+
+    "products": ["product_id", "product_category_name", "product_name_lenght", "product_description_lenght", "product_photos_qty", "product_weight_g", "product_length_cm", "product_height_cm", "product_width_cm"],
+
+    "sellers": ["seller_id", "seller_zip_code_prefix", "seller_city", "seller_state"],
+
+    "payments": ["order_id", "payment_sequential", "payment_type", "payment_installments", "payment_value"],
+
+    "reviews": ["review_id", "order_id", "review_score", "review_comment_title", "review_comment_message", "review_creation_date", "review_answer_timestamp"],
+
+    "category_translation": ["product_category_name", "product_category_name_english"],
+
+    "geolocation": ["geolocation_zip_code_prefix", "geolocation_lat", "geolocation_lng", "geolocation_city", "geolocation_state"]
+  },
+
+  "tables": {
+
+    "orders": {
+      "description": "Central hub. Tracks order lifecycle from purchase to delivery. Join here to filter by status/dates.",
+      "rows": 99441,
+      "columns": {
+        "order_id": "VARCHAR(50) PK - Unique order identifier",
+        "customer_id": "VARCHAR(50) FK→customers - Links to customer who placed THIS order",
+        "order_status": "VARCHAR(20) - Current status. CRITICAL: Use 'delivered' for revenue queries",
+        "order_purchase_timestamp": "TIMESTAMP - When customer placed order. USE THIS for time-based queries",
+        "order_approved_at": "TIMESTAMP - When payment approved (can be NULL)",
+        "order_delivered_carrier_date": "TIMESTAMP - When shipped to carrier (can be NULL)",
+        "order_delivered_customer_date": "TIMESTAMP - When customer received order (can be NULL)",
+        "order_estimated_delivery_date": "TIMESTAMP - Expected delivery date"
+      }
+    },
+
+    "customers": {
+      "description": "Customer demographics and location. customer_id is per-order, customer_unique_id is per-person.",
+      "rows": 99441,
+      "columns": {
+        "customer_id": "VARCHAR(50) PK (also FK in orders table) - One per ORDER (same person gets new ID each order). For joining orders↔customers ONLY. NOT for counting unique customers.",
+        "customer_unique_id": "VARCHAR(50) - One per PERSON across ALL orders. ONLY IN CUSTOMERS TABLE. Use for: counting customers, repeat customer analysis, lifetime value. Example: COUNT(DISTINCT customer_unique_id) FROM customers",
+        "customer_zip_code_prefix": "INTEGER - First 5 digits of postal code",
+        "customer_city": "VARCHAR(100) - City name (lowercase, no accents)",
+        "customer_state": "VARCHAR(2) - State code (2-letter uppercase: SP, RJ, MG, etc.)"
+      }
+    },
+
+    "order_items": {
+      "description": "Bridge table: individual products within each order (shopping cart). Links orders to products and sellers.",
+      "rows": 112650,
+      "columns": {
+        "order_id": "VARCHAR(50) PK1, FK→orders - Which order this item belongs to",
+        "order_item_id": "INTEGER PK2 - Sequence number of item within order (1, 2, 3...)",
+        "product_id": "VARCHAR(50) FK→products - Which product was purchased",
+        "seller_id": "VARCHAR(50) FK→sellers - Which seller fulfilled this item",
+        "shipping_limit_date": "TIMESTAMP - Deadline for seller to ship this item",
+        "price": "FLOAT - Item price in BRL. SUM(price) for order/revenue totals",
+        "freight_value": "FLOAT - Shipping cost per item in BRL. SUM(freight_value) for total shipping"
+      }
+    },
+
+    "products": {
+      "description": "Product catalog with categories (Portuguese) and physical dimensions. 610 products have NULL category.",
+      "rows": 32951,
+      "columns": {
+        "product_id": "VARCHAR(50) PK - Unique product identifier (names removed for privacy)",
+        "product_category_name": "VARCHAR(100) NULLABLE - Category in Portuguese. JOIN category_translation for English. 610 NULLs.",
+        "product_name_lenght": "FLOAT NULLABLE - Character length of product name (name not in dataset)",
+        "product_description_lenght": "FLOAT NULLABLE - Character length of product description (description not in dataset)",
+        "product_photos_qty": "FLOAT NULLABLE - Number of product photos in listing",
+        "product_weight_g": "FLOAT NULLABLE - Product weight in grams",
+        "product_length_cm": "FLOAT NULLABLE - Product length in centimeters",
+        "product_height_cm": "FLOAT NULLABLE - Product height in centimeters",
+        "product_width_cm": "FLOAT NULLABLE - Product width in centimeters"
+      }
+    },
+
+    "sellers": {
+      "description": "Marketplace sellers who fulfill orders. Join via order_items.seller_id.",
+      "rows": 3095,
+      "columns": {
+        "seller_id": "VARCHAR(50) PK - Unique seller identifier",
+        "seller_zip_code_prefix": "INTEGER - First 5 digits of seller postal code",
+        "seller_city": "VARCHAR(100) - Seller city (lowercase, no accents)",
+        "seller_state": "VARCHAR(2) - Seller state code (2-letter uppercase: SP, RJ, MG, etc.)"
+      }
+    },
+
+    "payments": {
+      "description": "Payment transactions. One order can have multiple payment records (payment_sequential).",
+      "rows": 103886,
+      "columns": {
+        "order_id": "VARCHAR(50) PK1, FK→orders - Which order this payment belongs to",
+        "payment_sequential": "INTEGER PK2 - Payment number (1,2,3...). Most orders have 1, some have 2+ when customer uses multiple payment methods (e.g., credit_card + voucher). MUST SUM(payment_value) GROUP BY order_id for accurate order totals.",
+        "payment_type": "VARCHAR(30) - Payment method (credit_card, boleto, voucher, debit_card)",
+        "payment_installments": "INTEGER - Number of monthly installments (1-24). payment_value is TOTAL, not per-month.",
+        "payment_value": "FLOAT - TOTAL payment amount in BRL. If multiple payments exist, SUM per order_id."
+      }
+    },
+
+    "reviews": {
+      "description": "Customer satisfaction feedback. One review per order max. Not all orders have reviews.",
+      "rows": 99224,
+      "columns": {
+        "review_id": "VARCHAR(50) PK - Unique review identifier",
+        "order_id": "VARCHAR(50) FK→orders - Which order this review is for",
+        "review_score": "INTEGER - Rating 1-5 stars (1=worst, 5=best). Average: 4.09",
+        "review_comment_title": "TEXT NULLABLE - Optional review title (88% NULL). In Portuguese.",
+        "review_comment_message": "TEXT NULLABLE - Optional review text (59% NULL). In Portuguese.",
+        "review_creation_date": "TIMESTAMP - When customer submitted the review",
+        "review_answer_timestamp": "TIMESTAMP - When platform processed the review"
+      }
+    },
+
+    "category_translation": {
+      "description": "Maps Portuguese product category names to English. ALWAYS join for user-facing category names.",
+      "rows": 71,
+      "columns": {
+        "product_category_name": "VARCHAR(100) PK - Category name in Portuguese (matches products table)",
+        "product_category_name_english": "VARCHAR(100) - English translation. Use this in SELECT and GROUP BY for reports."
+      }
+    },
+
+    "geolocation": {
+      "description": "Lat/lng coordinates for zip codes. No PK (multiple coords per zip). 1M+ rows - use with caution.",
+      "rows": 1000163,
+      "columns": {
+        "geolocation_zip_code_prefix": "INTEGER - First 5 digits of postal code (NOT unique, multiple rows per zip)",
+        "geolocation_lat": "FLOAT - Latitude (negative = Southern Hemisphere)",
+        "geolocation_lng": "FLOAT - Longitude (negative = Western Hemisphere)",
+        "geolocation_city": "VARCHAR(100) - City name (lowercase)",
+        "geolocation_state": "VARCHAR(2) - State code (2-letter uppercase)"
+      }
+    }
+  },
+
+  "critical_rules": [
+    "customer_unique_id is ONLY in customers table (NOT in orders). Use for counting unique customers, repeat customers, lifetime value. customer_id is in customers and is one per ORDER. SQL: SELECT COUNT(DISTINCT customer_unique_id) FROM customers",
+
+    "Revenue queries MUST filter WHERE order_status='delivered'. Only delivered orders count as revenue. Canceled/pending orders are not revenue. SQL: WHERE o.order_status = 'delivered'",
+
+    "Payment sequential: One order can have multiple payment records. MUST SUM(payment_value) GROUP BY order_id to get accurate order totals. SQL: SELECT order_id, SUM(payment_value) FROM payments GROUP BY order_id",
+
+    "Product categories: ALWAYS join category_translation table for English names. Products table has Portuguese names. SQL: JOIN category_translation ct ON p.product_category_name = ct.product_category_name",
+
+    "Time queries: Use order_purchase_timestamp (NOT order_approved_at or order_delivered_customer_date) unless user specifically asks about delivery/approval timing. SQL: WHERE order_purchase_timestamp >= '2017-01-01'",
+
+    "Counting orders from order_items: Use COUNT(DISTINCT order_id) to avoid double-counting. Each order has multiple items. SQL: SELECT COUNT(DISTINCT order_id) FROM order_items",
+
+    "Join path to products: Cannot join orders directly to products. Must go through order_items bridge table. SQL: FROM orders o JOIN order_items oi ON o.order_id = oi.order_id JOIN products p ON oi.product_id = p.product_id",
+
+    "Geographic format: Cities are lowercase ('sao paulo'), states are 2-letter uppercase ('SP'). Use LOWER() for case-insensitive matching. SQL: WHERE LOWER(customer_city) = 'sao paulo'"
+  ],
+
+  "join_patterns": {
+    "revenue_total": "Total revenue: orders → order_items WHERE order_status='delivered'",
+
+    "revenue_by_category": "Revenue by category: orders → order_items → products → category_translation WHERE order_status='delivered' AND product_category_name IS NOT NULL",
+
+    "revenue_by_city": "Revenue by city: orders → order_items → customers WHERE order_status='delivered'",
+
+    "customer_counts": "Count unique customers: customers only (use customer_unique_id, no joins needed unless filtering by order dates)",
+
+    "customer_lifetime_value": "Customer spending: customers → orders → payments WHERE order_status='delivered' GROUP BY customer_unique_id",
+
+    "repeat_customers": "Repeat customers: customers → orders GROUP BY customer_unique_id HAVING COUNT(DISTINCT order_id) > 1",
+
+    "product_performance": "Products by category: order_items → products → category_translation WHERE product_category_name IS NOT NULL",
+
+    "order_totals": "Order payment total: orders → payments GROUP BY order_id (must SUM payment_value)",
+
+    "payment_methods": "Payment analysis: orders → payments WHERE order_status='delivered'",
+
+    "seller_performance": "Seller revenue: orders → order_items → sellers WHERE order_status='delivered'",
+
+    "geographic_customer": "Customer location: orders → customers (for customer_city, customer_state)"
+  },
+
+  "anti_patterns": [
+    "❌ NEVER: orders → products (no direct relationship, must go through order_items)",
+
+    "❌ NEVER: SELECT customer_unique_id FROM orders (customer_unique_id is ONLY in customers table)",
+
+    "❌ NEVER: Access customer_state from orders table (customer_state is in customers table, must JOIN)",
+
+    "❌ NEVER: payment_value without SUM and GROUP BY order_id (orders have multiple payments)",
+
+    "❌ NEVER: COUNT(order_id) from order_items without DISTINCT (will count same order multiple times)"
+  ],
+
+  "reference_data": {
+    "states": [
+      "SP=São Paulo", "RJ=Rio de Janeiro", "MG=Minas Gerais", "RS=Rio Grande do Sul",
+      "PR=Paraná", "SC=Santa Catarina", "BA=Bahia", "DF=Brasília", "GO=Goiás",
+      "PE=Pernambuco", "CE=Ceará", "PA=Pará", "MA=Maranhão", "ES=Espírito Santo",
+      "PB=Paraíba", "RN=Rio Grande do Norte", "MT=Mato Grosso", "AL=Alagoas",
+      "PI=Piauí", "MS=Mato Grosso do Sul", "SE=Sergipe", "RO=Rondônia",
+      "TO=Tocantins", "AC=Acre", "AM=Amazonas", "AP=Amapá", "RR=Roraima"
+    ],
+
+    "cities": [
+      "sao paulo", "rio de janeiro", "belo horizonte", "brasilia", "curitiba",
+      "porto alegre", "salvador", "fortaleza", "recife", "campinas", "guarulhos",
+      "goiania", "belem", "manaus", "natal", "teresina", "joao pessoa",
+      "sorocaba", "sao bernardo do campo", "ribeirao preto"
+    ],
+
+    "payment_types": [
+      "credit_card (74%)", "boleto (19%)", "voucher (6%)", "debit_card (1%)"
+    ],
+
+    "order_statuses": [
+      "delivered (97%)", "shipped (1%)", "canceled (1%)", "unavailable (0.6%)",
+      "invoiced (0.3%)", "processing (0.3%)", "created (<0.1%)", "approved (<0.1%)"
+    ],
+
+    "categories": [
+      "bed_bath_table", "sports_leisure", "furniture_decor", "health_beauty",
+      "housewares", "auto", "computers_accessories", "toys", "watches_gifts",
+      "telephony", "books_general_interest", "fashion_male_clothing",
+      "fashio_female_clothing", "pet_shop", "perfumery", "construction_tools_garden",
+      "electronics", "stationery", "small_appliances", "home_comfort_2", "cool_stuff",
+      "furniture_living_room", "baby", "fashion_shoes", "kitchen_dining_laundry_garden_furniture",
+      "computers", "consoles_games", "office_furniture", "garden_tools", "home_confort",
+      "audio", "fashion_childrens_clothes", "fashion_sport", "signaling_and_security",
+      "air_conditioning", "christmas_supplies", "party_supplies", "construction_tools_safety",
+      "fashion_underwear_beach", "home_appliances", "luggage_accessories", "construction_tools_lights",
+      "industry_commerce_and_business", "food", "market_place", "construction_tools_tools",
+      "flowers", "costruction_tools_garden", "arts_and_craftmanship", "musical_instruments",
+      "cine_photo", "drinks", "home_construction", "small_appliances_home_oven_and_coffee",
+      "security_and_services", "costruction_tools_tools", "agro_industry_and_commerce",
+      "furniture_bedroom", "furniture_mattress_and_upholstery", "books_technical",
+      "books_imported", "food_drink", "cds_dvds_musicals", "dvds_blu_ray",
+      "portateis_cozinha_e_preparadores_de_alimentos", "la_cuisine", "diapers_and_hygiene",
+      "music", "home_appliances_2", "portateis_casa_forno_e_cafe", "fixed_telephony"
+    ],
+
+    "format_rules": {
+      "cities": "Lowercase, no accents (e.g., 'sao paulo' not 'São Paulo'). Use LOWER() for matching.",
+      "states": "2-letter UPPERCASE codes only (e.g., 'SP' not 'sp' or 'Sao Paulo')",
+      "categories": "Lowercase with underscores (e.g., 'bed_bath_table')",
+      "currency": "BRL (Brazilian Real, symbol R$)"
+    }
+  },
+
+  "guardrails": {
+    "forbidden_keywords": [
+      "INSERT", "UPDATE", "DELETE", "TRUNCATE", "MERGE", "REPLACE",
+      "DROP", "ALTER", "CREATE",
+      "GRANT", "REVOKE",
+      "BEGIN", "COMMIT", "ROLLBACK", "SAVEPOINT"
+    ],
+
+    "allowed_operations": [
+      "SELECT with aggregations only (COUNT, SUM, AVG, MIN, MAX)",
+      "JOIN (max 5 tables)",
+      "WHERE, GROUP BY, HAVING, ORDER BY, LIMIT, DISTINCT",
+      "Aggregate functions: COUNT, SUM, AVG, MIN, MAX",
+      "Date functions: EXTRACT, DATE_TRUNC",
+      "String functions: LOWER, UPPER, CONCAT",
+      "CTEs (WITH clause) and subqueries",
+      "Window functions: ROW_NUMBER, RANK, LAG, LEAD"
+    ],
+
+    "select_restrictions": {
+      "rule": "SELECT * is FORBIDDEN. No raw row returns allowed. Only aggregations (COUNT, SUM, AVG, MIN, MAX) or GROUP BY results permitted.",
+      "forbidden_examples": [
+        "SELECT * FROM orders",
+        "SELECT * FROM orders LIMIT 10",
+        "SELECT order_id, customer_id FROM orders",
+        "SELECT order_id, SUM(price) FROM order_items"
+      ],
+      "allowed_examples": [
+        "SELECT COUNT(*) FROM orders",
+        "SELECT customer_city, COUNT(*) as order_count FROM customers GROUP BY customer_city",
+        "SELECT AVG(payment_value) FROM payments",
+        "SELECT category, SUM(price) as revenue FROM ... GROUP BY category"
+      ],
+      "explanation": "Returning individual order IDs, customer IDs, or any row identifiers is forbidden. Only aggregated summaries allowed."
+    },
+
+    "query_requirements": {
+      "revenue_queries": "MUST include WHERE order_status='delivered'",
+      "join_limit": "Maximum 5 table joins per query",
+      "aggregation_required": "All queries must return aggregated results (no raw rows)",
+      "city_matching": "Use LOWER() for case-insensitive city name comparisons"
+    },
+
+    "rejection_messages": {
+      "forbidden_keyword": "Data modification not allowed. This is a read-only system (INSERT/UPDATE/DELETE/TRUNCATE forbidden).",
+      "select_star": "SELECT * is forbidden. Use aggregations: COUNT, SUM, AVG, MIN, MAX with GROUP BY.",
+      "raw_rows": "Returning individual rows is forbidden. Only aggregated summaries (counts, averages, totals) are permitted.",
+      "schema_modification": "Schema changes not allowed (CREATE/ALTER/DROP forbidden).",
+      "too_many_joins": "Query joins more than 5 tables. Please simplify.",
+      "missing_delivered_filter": "Revenue queries must include WHERE order_status='delivered'. Only completed orders count as revenue."
+    }
+  }
+}

@@ -1,0 +1,1604 @@
+{
+  "training_examples": [
+    {
+      "id": 1,
+      "question": "What's the total revenue?",
+      "sql": "SELECT SUM(oi.price) AS total_revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id WHERE o.order_status = 'delivered'",
+      "category": "revenue",
+      "difficulty": "easy",
+      "notes": "Basic revenue query. Must filter delivered orders only."
+    },
+    {
+      "id": 2,
+      "question": "Show me revenue by product category",
+      "sql": "SELECT ct.product_category_name_english AS category, SUM(oi.price) AS revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN products p ON oi.product_id = p.product_id JOIN category_translation ct ON p.product_category_name = ct.product_category_name WHERE o.order_status = 'delivered' AND p.product_category_name IS NOT NULL GROUP BY ct.product_category_name_english ORDER BY revenue DESC",
+      "category": "revenue",
+      "difficulty": "hard",
+      "notes": "4-table join. Must use category_translation for English names. Filter NULL categories."
+    },
+    {
+      "id": 3,
+      "question": "What's the revenue in São Paulo?",
+      "sql": "SELECT SUM(oi.price) AS revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN customers c ON o.customer_id = c.customer_id WHERE o.order_status = 'delivered' AND LOWER(c.customer_city) = 'sao paulo'",
+      "category": "revenue",
+      "difficulty": "medium",
+      "notes": "Geographic filter. Use LOWER() for case-insensitive city matching."
+    },
+    {
+      "id": 4,
+      "question": "How many unique customers do we have?",
+      "sql": "SELECT COUNT(DISTINCT customer_unique_id) AS unique_customers FROM customers",
+      "category": "customer",
+      "difficulty": "easy",
+      "notes": "CRITICAL: Use customer_unique_id from customers table. Single table query."
+    },
+    {
+      "id": 5,
+      "question": "Show me monthly revenue for 2017",
+      "sql": "SELECT EXTRACT(MONTH FROM o.order_purchase_timestamp) AS month, SUM(oi.price) AS revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id WHERE o.order_status = 'delivered' AND EXTRACT(YEAR FROM o.order_purchase_timestamp) = 2017 GROUP BY EXTRACT(MONTH FROM o.order_purchase_timestamp) ORDER BY month",
+      "category": "time",
+      "difficulty": "medium",
+      "notes": "Use order_purchase_timestamp for time queries. Filter by year and group by month."
+    },
+    {
+      "id": 6,
+      "question": "What's the average order value?",
+      "sql": "SELECT AVG(order_total) AS avg_order_value FROM (SELECT o.order_id, SUM(p.payment_value) AS order_total FROM orders o JOIN payments p ON o.order_id = p.order_id WHERE o.order_status = 'delivered' GROUP BY o.order_id) AS order_totals",
+      "category": "payment",
+      "difficulty": "hard",
+      "notes": "CRITICAL: Must SUM(payment_value) per order first (payment_sequential), then AVG. Subquery required."
+    },
+    {
+      "id": 7,
+      "question": "How many orders were paid with boleto?",
+      "sql": "SELECT COUNT(DISTINCT order_id) AS boleto_orders FROM payments WHERE payment_type = 'boleto'",
+      "category": "payment",
+      "difficulty": "easy",
+      "notes": "Count distinct orders. Single table query on payments."
+    },
+    {
+      "id": 8,
+      "question": "What are the top 5 product categories by revenue?",
+      "sql": "SELECT ct.product_category_name_english AS category, SUM(oi.price) AS revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN products p ON oi.product_id = p.product_id JOIN category_translation ct ON p.product_category_name = ct.product_category_name WHERE o.order_status = 'delivered' AND p.product_category_name IS NOT NULL GROUP BY ct.product_category_name_english ORDER BY revenue DESC LIMIT 5",
+      "category": "product",
+      "difficulty": "hard",
+      "notes": "Same as query 2 but with LIMIT 5. English category names required."
+    },
+    {
+      "id": 9,
+      "question": "How many customers are in Rio de Janeiro state?",
+      "sql": "SELECT COUNT(DISTINCT customer_unique_id) AS customers_in_rj FROM customers WHERE customer_state = 'RJ'",
+      "category": "geographic",
+      "difficulty": "easy",
+      "notes": "State code is uppercase. Use customer_unique_id for counting customers."
+    },
+    {
+      "id": 10,
+      "question": "What's the average review score?",
+      "sql": "SELECT AVG(review_score) AS avg_review_score FROM reviews",
+      "category": "review",
+      "difficulty": "easy",
+      "notes": "Simple aggregation. Single table query."
+    },
+    {
+      "id": 11,
+      "question": "Show me revenue by payment method",
+      "sql": "SELECT p.payment_type, SUM(p.payment_value) AS revenue FROM payments p JOIN orders o ON p.order_id = o.order_id WHERE o.order_status = 'delivered' GROUP BY p.payment_type ORDER BY revenue DESC",
+      "category": "payment",
+      "difficulty": "medium",
+      "notes": "Join to orders to filter delivered. Group by payment type."
+    },
+    {
+      "id": 12,
+      "question": "How many repeat customers do we have?",
+      "sql": "SELECT COUNT(*) AS repeat_customers FROM (SELECT customer_unique_id FROM customers c JOIN orders o ON c.customer_id = o.customer_id GROUP BY customer_unique_id HAVING COUNT(DISTINCT o.order_id) > 1) AS repeat_cust",
+      "category": "customer",
+      "difficulty": "hard",
+      "notes": "CRITICAL: Join customers to orders, group by customer_unique_id, filter HAVING count > 1."
+    },
+    {
+      "id": 13,
+      "question": "What's the total revenue in 2018?",
+      "sql": "SELECT SUM(oi.price) AS revenue_2018 FROM order_items oi JOIN orders o ON oi.order_id = o.order_id WHERE o.order_status = 'delivered' AND EXTRACT(YEAR FROM o.order_purchase_timestamp) = 2018",
+      "category": "time",
+      "difficulty": "medium",
+      "notes": "Filter by year using EXTRACT. Use order_purchase_timestamp."
+    },
+    {
+      "id": 14,
+      "question": "Which city has the highest revenue?",
+      "sql": "SELECT c.customer_city, SUM(oi.price) AS revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN customers c ON o.customer_id = c.customer_id WHERE o.order_status = 'delivered' GROUP BY c.customer_city ORDER BY revenue DESC LIMIT 1",
+      "category": "geographic",
+      "difficulty": "medium",
+      "notes": "3-table join. Group by city, order by revenue descending, limit 1."
+    },
+    {
+      "id": 15,
+      "question": "How many 5-star reviews do we have?",
+      "sql": "SELECT COUNT(*) AS five_star_reviews FROM reviews WHERE review_score = 5",
+      "category": "review",
+      "difficulty": "easy",
+      "notes": "Simple filter on review_score. Single table query."
+    },
+    {
+      "id": 16,
+      "question": "What's the total number of orders?",
+      "sql": "SELECT COUNT(DISTINCT order_id) AS total_orders FROM orders",
+      "category": "general",
+      "difficulty": "easy",
+      "notes": "Count all orders regardless of status. No delivered filter needed for counts."
+    },
+    {
+      "id": 17,
+      "question": "Show me the top 10 sellers by revenue",
+      "sql": "SELECT s.seller_id, s.seller_city, s.seller_state, SUM(oi.price) AS revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN sellers s ON oi.seller_id = s.seller_id WHERE o.order_status = 'delivered' GROUP BY s.seller_id, s.seller_city, s.seller_state ORDER BY revenue DESC LIMIT 10",
+      "category": "seller",
+      "difficulty": "medium",
+      "notes": "3-table join. Group by seller (include city/state for context)."
+    },
+    {
+      "id": 18,
+      "question": "What's the average number of installments for credit card payments?",
+      "sql": "SELECT AVG(payment_installments) AS avg_installments FROM payments WHERE payment_type = 'credit_card'",
+      "category": "payment",
+      "difficulty": "easy",
+      "notes": "Filter by payment type, calculate average. Single table query."
+    },
+    {
+      "id": 19,
+      "question": "How many orders were delivered in each state?",
+      "sql": "SELECT c.customer_state, COUNT(DISTINCT o.order_id) AS order_count FROM orders o JOIN customers c ON o.customer_id = c.customer_id WHERE o.order_status = 'delivered' GROUP BY c.customer_state ORDER BY order_count DESC",
+      "category": "geographic",
+      "difficulty": "medium",
+      "notes": "Join orders to customers for state. Filter delivered, group by state."
+    },
+    {
+      "id": 20,
+      "question": "What's the revenue by state?",
+      "sql": "SELECT c.customer_state, SUM(oi.price) AS revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN customers c ON o.customer_id = c.customer_id WHERE o.order_status = 'delivered' GROUP BY c.customer_state ORDER BY revenue DESC",
+      "category": "revenue",
+      "difficulty": "medium",
+      "notes": "3-table join. Group by state, order by revenue descending."
+    },
+    {
+      "id": 21,
+      "question": "Who is our top customer by total spending?",
+      "sql": "SELECT c.customer_unique_id, SUM(p.payment_value) AS total_spent FROM customers c JOIN orders o ON c.customer_id = o.customer_id JOIN payments p ON o.order_id = p.order_id WHERE o.order_status = 'delivered' GROUP BY c.customer_unique_id ORDER BY total_spent DESC LIMIT 1",
+      "category": "customer",
+      "difficulty": "hard",
+      "notes": "CRITICAL: Group by customer_unique_id. Sum all payments for customer's orders."
+    },
+    {
+      "id": 22,
+      "question": "How many orders had multiple payment methods?",
+      "sql": "SELECT COUNT(DISTINCT order_id) AS multi_payment_orders FROM payments WHERE order_id IN (SELECT order_id FROM payments GROUP BY order_id HAVING COUNT(*) > 1)",
+      "category": "payment",
+      "difficulty": "medium",
+      "notes": "Orders with payment_sequential > 1. Use subquery to find orders with multiple payment records."
+    },
+    {
+      "id": 23,
+      "question": "What's the revenue for the health_beauty category?",
+      "sql": "SELECT SUM(oi.price) AS revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN products p ON oi.product_id = p.product_id JOIN category_translation ct ON p.product_category_name = ct.product_category_name WHERE o.order_status = 'delivered' AND ct.product_category_name_english = 'health_beauty'",
+      "category": "product",
+      "difficulty": "hard",
+      "notes": "Filter by specific English category name. 4-table join required."
+    },
+    {
+      "id": 24,
+      "question": "Show me the revenue trend by quarter in 2017",
+      "sql": "SELECT EXTRACT(QUARTER FROM o.order_purchase_timestamp) AS quarter, SUM(oi.price) AS revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id WHERE o.order_status = 'delivered' AND EXTRACT(YEAR FROM o.order_purchase_timestamp) = 2017 GROUP BY EXTRACT(QUARTER FROM o.order_purchase_timestamp) ORDER BY quarter",
+      "category": "time",
+      "difficulty": "medium",
+      "notes": "Use EXTRACT(QUARTER) for quarterly grouping. Filter by year 2017."
+    },
+    {
+      "id": 25,
+      "question": "How many one-time customers do we have?",
+      "sql": "SELECT COUNT(*) AS one_time_customers FROM (SELECT customer_unique_id FROM customers c JOIN orders o ON c.customer_id = o.customer_id GROUP BY customer_unique_id HAVING COUNT(DISTINCT o.order_id) = 1) AS one_time",
+      "category": "customer",
+      "difficulty": "hard",
+      "notes": "CRITICAL: Group by customer_unique_id, filter HAVING count = 1 exactly."
+    },
+    {
+      "id": 26,
+      "question": "What's the average delivery time in days?",
+      "sql": "SELECT AVG(EXTRACT(EPOCH FROM (order_delivered_customer_date - order_purchase_timestamp))/86400) AS avg_delivery_days FROM orders WHERE order_delivered_customer_date IS NOT NULL",
+      "category": "time",
+      "difficulty": "medium",
+      "notes": "Calculate time difference, convert to days (86400 seconds). Filter out NULL delivery dates."
+    },
+    {
+      "id": 27,
+      "question": "Which payment method is most popular?",
+      "sql": "SELECT payment_type, COUNT(DISTINCT order_id) AS order_count FROM payments GROUP BY payment_type ORDER BY order_count DESC LIMIT 1",
+      "category": "payment",
+      "difficulty": "easy",
+      "notes": "Count distinct orders per payment type, order descending, limit 1."
+    },
+    {
+      "id": 28,
+      "question": "Show me revenue by city in São Paulo state",
+      "sql": "SELECT c.customer_city, SUM(oi.price) AS revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN customers c ON o.customer_id = c.customer_id WHERE o.order_status = 'delivered' AND c.customer_state = 'SP' GROUP BY c.customer_city ORDER BY revenue DESC",
+      "category": "geographic",
+      "difficulty": "medium",
+      "notes": "Filter by state, group by city. 3-table join."
+    },
+    {
+      "id": 29,
+      "question": "How many products are in each category?",
+      "sql": "SELECT ct.product_category_name_english AS category, COUNT(DISTINCT p.product_id) AS product_count FROM products p JOIN category_translation ct ON p.product_category_name = ct.product_category_name WHERE p.product_category_name IS NOT NULL GROUP BY ct.product_category_name_english ORDER BY product_count DESC",
+      "category": "product",
+      "difficulty": "medium",
+      "notes": "Count products per category. Use English names. Filter NULL categories."
+    },
+    {
+      "id": 30,
+      "question": "What's the total shipping cost (freight)?",
+      "sql": "SELECT SUM(oi.freight_value) AS total_freight FROM order_items oi JOIN orders o ON oi.order_id = o.order_id WHERE o.order_status = 'delivered'",
+      "category": "revenue",
+      "difficulty": "easy",
+      "notes": "Sum freight_value from order_items. Filter delivered orders."
+    },
+    {
+      "id": 31,
+      "question": "How many sellers do we have?",
+      "sql": "SELECT COUNT(DISTINCT seller_id) AS total_sellers FROM sellers",
+      "category": "seller",
+      "difficulty": "easy",
+      "notes": "Simple count of unique sellers. Single table query."
+    },
+    {
+      "id": 32,
+      "question": "What's the distribution of review scores?",
+      "sql": "SELECT review_score, COUNT(*) AS review_count FROM reviews GROUP BY review_score ORDER BY review_score DESC",
+      "category": "review",
+      "difficulty": "easy",
+      "notes": "Count reviews per score (1-5). Group by score."
+    },
+    {
+      "id": 33,
+      "question": "Show me the top 5 customers by number of orders",
+      "sql": "SELECT c.customer_unique_id, COUNT(DISTINCT o.order_id) AS order_count FROM customers c JOIN orders o ON c.customer_id = o.customer_id GROUP BY c.customer_unique_id ORDER BY order_count DESC LIMIT 5",
+      "category": "customer",
+      "difficulty": "medium",
+      "notes": "CRITICAL: Group by customer_unique_id. Count distinct orders per customer."
+    },
+    {
+      "id": 34,
+      "question": "What's the revenue in Minas Gerais state?",
+      "sql": "SELECT SUM(oi.price) AS revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN customers c ON o.customer_id = c.customer_id WHERE o.order_status = 'delivered' AND c.customer_state = 'MG'",
+      "category": "geographic",
+      "difficulty": "medium",
+      "notes": "Filter by state code MG (Minas Gerais). 3-table join."
+    },
+    {
+      "id": 35,
+      "question": "How many orders were placed each month in 2018?",
+      "sql": "SELECT EXTRACT(MONTH FROM order_purchase_timestamp) AS month, COUNT(DISTINCT order_id) AS order_count FROM orders WHERE EXTRACT(YEAR FROM order_purchase_timestamp) = 2018 GROUP BY EXTRACT(MONTH FROM order_purchase_timestamp) ORDER BY month",
+      "category": "time",
+      "difficulty": "medium",
+      "notes": "Count orders by month. No delivered filter (counting all orders). Use order_purchase_timestamp."
+    },
+    {
+      "id": 36,
+      "question": "Which seller has the most orders?",
+      "sql": "SELECT s.seller_id, COUNT(DISTINCT oi.order_id) AS order_count FROM order_items oi JOIN sellers s ON oi.seller_id = s.seller_id GROUP BY s.seller_id ORDER BY order_count DESC LIMIT 1",
+      "category": "seller",
+      "difficulty": "medium",
+      "notes": "Count distinct orders per seller. Order descending, limit 1."
+    },
+    {
+      "id": 37,
+      "question": "What's the average product price?",
+      "sql": "SELECT AVG(price) AS avg_product_price FROM order_items",
+      "category": "product",
+      "difficulty": "easy",
+      "notes": "Simple average of item prices. Single table query."
+    },
+    {
+      "id": 38,
+      "question": "How many customers placed orders in 2017?",
+      "sql": "SELECT COUNT(DISTINCT c.customer_unique_id) AS customers_2017 FROM customers c JOIN orders o ON c.customer_id = o.customer_id WHERE EXTRACT(YEAR FROM o.order_purchase_timestamp) = 2017",
+      "category": "customer",
+      "difficulty": "medium",
+      "notes": "CRITICAL: Use customer_unique_id. Filter by year 2017."
+    },
+    {
+      "id": 39,
+      "question": "What's the total value of voucher payments?",
+      "sql": "SELECT SUM(payment_value) AS total_voucher_value FROM payments WHERE payment_type = 'voucher'",
+      "category": "payment",
+      "difficulty": "easy",
+      "notes": "Filter by payment type voucher. Sum payment values."
+    },
+    {
+      "id": 40,
+      "question": "Show me revenue by category in Rio de Janeiro city",
+      "sql": "SELECT ct.product_category_name_english AS category, SUM(oi.price) AS revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN products p ON oi.product_id = p.product_id JOIN category_translation ct ON p.product_category_name = ct.product_category_name JOIN customers c ON o.customer_id = c.customer_id WHERE o.order_status = 'delivered' AND LOWER(c.customer_city) = 'rio de janeiro' AND p.product_category_name IS NOT NULL GROUP BY ct.product_category_name_english ORDER BY revenue DESC",
+      "category": "multi_complex",
+      "difficulty": "very_hard",
+      "notes": "5-table join. Multi-dimensional: category + geography. Use LOWER() for city matching."
+    },
+    {
+      "id": 41,
+      "question": "What's the revenue by seller state?",
+      "sql": "SELECT s.seller_state, SUM(oi.price) AS revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN sellers s ON oi.seller_id = s.seller_id WHERE o.order_status = 'delivered' GROUP BY s.seller_state ORDER BY revenue DESC",
+      "category": "seller",
+      "difficulty": "medium",
+      "notes": "3-table join. Group by seller state (where seller is located)."
+    },
+    {
+      "id": 42,
+      "question": "How many reviews have comments?",
+      "sql": "SELECT COUNT(*) AS reviews_with_comments FROM reviews WHERE review_comment_message IS NOT NULL",
+      "category": "review",
+      "difficulty": "easy",
+      "notes": "Filter out NULL comments. 41% of reviews have comments (59% are NULL)."
+    },
+    {
+      "id": 43,
+      "question": "What's the average customer lifetime value?",
+      "sql": "SELECT AVG(customer_total) AS avg_lifetime_value FROM (SELECT c.customer_unique_id, SUM(p.payment_value) AS customer_total FROM customers c JOIN orders o ON c.customer_id = o.customer_id JOIN payments p ON o.order_id = p.order_id WHERE o.order_status = 'delivered' GROUP BY c.customer_unique_id) AS customer_values",
+      "category": "customer",
+      "difficulty": "very_hard",
+      "notes": "CRITICAL: Calculate total per customer_unique_id first, then average. Subquery required."
+    },
+    {
+      "id": 44,
+      "question": "Show me orders count by payment type",
+      "sql": "SELECT payment_type, COUNT(DISTINCT order_id) AS order_count FROM payments GROUP BY payment_type ORDER BY order_count DESC",
+      "category": "payment",
+      "difficulty": "easy",
+      "notes": "Count distinct orders per payment type. No delivered filter (counting all)."
+    },
+    {
+      "id": 45,
+      "question": "Which month in 2017 had the highest revenue?",
+      "sql": "SELECT EXTRACT(MONTH FROM o.order_purchase_timestamp) AS month, SUM(oi.price) AS revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id WHERE o.order_status = 'delivered' AND EXTRACT(YEAR FROM o.order_purchase_timestamp) = 2017 GROUP BY EXTRACT(MONTH FROM o.order_purchase_timestamp) ORDER BY revenue DESC LIMIT 1",
+      "category": "time",
+      "difficulty": "medium",
+      "notes": "Group by month, order by revenue descending, limit 1 for highest."
+    },
+    {
+      "id": 46,
+      "question": "How many orders are in each status?",
+      "sql": "SELECT order_status, COUNT(DISTINCT order_id) AS order_count FROM orders GROUP BY order_status ORDER BY order_count DESC",
+      "category": "general",
+      "difficulty": "easy",
+      "notes": "Count orders by status. No filter (include all statuses). 97% are delivered."
+    },
+    {
+      "id": 47,
+      "question": "What's the total revenue including shipping?",
+      "sql": "SELECT SUM(oi.price + oi.freight_value) AS total_revenue_with_shipping FROM order_items oi JOIN orders o ON oi.order_id = o.order_id WHERE o.order_status = 'delivered'",
+      "category": "revenue",
+      "difficulty": "easy",
+      "notes": "Add price + freight_value for total. Filter delivered orders."
+    },
+    {
+      "id": 48,
+      "question": "Show me the top 10 cities by number of customers",
+      "sql": "SELECT customer_city, COUNT(DISTINCT customer_unique_id) AS customer_count FROM customers GROUP BY customer_city ORDER BY customer_count DESC LIMIT 10",
+      "category": "geographic",
+      "difficulty": "easy",
+      "notes": "CRITICAL: Use customer_unique_id. Group by city."
+    },
+    {
+      "id": 49,
+      "question": "What percentage of orders used credit cards?",
+      "sql": "SELECT (COUNT(DISTINCT CASE WHEN payment_type = 'credit_card' THEN order_id END) * 100.0 / COUNT(DISTINCT order_id)) AS credit_card_percentage FROM payments",
+      "category": "payment",
+      "difficulty": "medium",
+      "notes": "Use CASE to count credit card orders, divide by total, multiply by 100."
+    },
+    {
+      "id": 50,
+      "question": "How many sellers are in São Paulo state?",
+      "sql": "SELECT COUNT(DISTINCT seller_id) AS sellers_in_sp FROM sellers WHERE seller_state = 'SP'",
+      "category": "seller",
+      "difficulty": "easy",
+      "notes": "Filter by state code. Count unique sellers."
+    },
+    {
+      "id": 51,
+      "question": "What's the revenue for orders with review score 5?",
+      "sql": "SELECT SUM(oi.price) AS revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN reviews r ON o.order_id = r.order_id WHERE o.order_status = 'delivered' AND r.review_score = 5",
+      "category": "multi_complex",
+      "difficulty": "medium",
+      "notes": "3-table join. Filter by review score and delivered status."
+    },
+    {
+      "id": 52,
+      "question": "Show me average order value by state",
+      "sql": "SELECT c.customer_state, AVG(order_total) AS avg_order_value FROM (SELECT o.order_id, c.customer_state, SUM(p.payment_value) AS order_total FROM orders o JOIN payments p ON o.order_id = p.order_id JOIN customers c ON o.customer_id = c.customer_id WHERE o.order_status = 'delivered' GROUP BY o.order_id, c.customer_state) AS order_values GROUP BY customer_state ORDER BY avg_order_value DESC",
+      "category": "multi_complex",
+      "difficulty": "very_hard",
+      "notes": "CRITICAL: Calculate order total first (SUM payments), then average by state. Complex subquery."
+    },
+    {
+      "id": 53,
+      "question": "How many products weigh more than 5kg?",
+      "sql": "SELECT COUNT(DISTINCT product_id) AS heavy_products FROM products WHERE product_weight_g > 5000",
+      "category": "product",
+      "difficulty": "easy",
+      "notes": "5kg = 5000 grams. Filter by weight, count products."
+    },
+    {
+      "id": 54,
+      "question": "What's the most common number of installments?",
+      "sql": "SELECT payment_installments, COUNT(*) AS payment_count FROM payments WHERE payment_type = 'credit_card' GROUP BY payment_installments ORDER BY payment_count DESC LIMIT 1",
+      "category": "payment",
+      "difficulty": "easy",
+      "notes": "Filter credit cards only (other types always 1 installment). Group by installments."
+    },
+    {
+      "id": 55,
+      "question": "Show me revenue by year",
+      "sql": "SELECT EXTRACT(YEAR FROM o.order_purchase_timestamp) AS year, SUM(oi.price) AS revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id WHERE o.order_status = 'delivered' GROUP BY EXTRACT(YEAR FROM o.order_purchase_timestamp) ORDER BY year",
+      "category": "time",
+      "difficulty": "medium",
+      "notes": "Group by year. Note: 2018 is incomplete (ends October 17)."
+    },
+    {
+      "id": 56,
+      "question": "Which category has the most products?",
+      "sql": "SELECT ct.product_category_name_english AS category, COUNT(DISTINCT p.product_id) AS product_count FROM products p JOIN category_translation ct ON p.product_category_name = ct.product_category_name WHERE p.product_category_name IS NOT NULL GROUP BY ct.product_category_name_english ORDER BY product_count DESC LIMIT 1",
+      "category": "product",
+      "difficulty": "medium",
+      "notes": "Use English category names. Filter NULL categories. Limit 1 for top."
+    },
+    {
+      "id": 57,
+      "question": "How many customers have made more than 3 orders?",
+      "sql": "SELECT COUNT(*) AS active_customers FROM (SELECT customer_unique_id FROM customers c JOIN orders o ON c.customer_id = o.customer_id GROUP BY customer_unique_id HAVING COUNT(DISTINCT o.order_id) > 3) AS frequent_customers",
+      "category": "customer",
+      "difficulty": "hard",
+      "notes": "CRITICAL: Group by customer_unique_id, filter HAVING count > 3."
+    },
+    {
+      "id": 58,
+      "question": "What's the average review score by product category?",
+      "sql": "SELECT ct.product_category_name_english AS category, AVG(r.review_score) AS avg_score FROM reviews r JOIN order_items oi ON r.order_id = oi.order_id JOIN products p ON oi.product_id = p.product_id JOIN category_translation ct ON p.product_category_name = ct.product_category_name WHERE p.product_category_name IS NOT NULL GROUP BY ct.product_category_name_english ORDER BY avg_score DESC",
+      "category": "multi_complex",
+      "difficulty": "hard",
+      "notes": "4-table join. Reviews → order_items → products → category_translation."
+    },
+    {
+      "id": 59,
+      "question": "Show me total orders by day of week",
+      "sql": "SELECT EXTRACT(DOW FROM order_purchase_timestamp) AS day_of_week, COUNT(DISTINCT order_id) AS order_count FROM orders GROUP BY EXTRACT(DOW FROM order_purchase_timestamp) ORDER BY day_of_week",
+      "category": "time",
+      "difficulty": "medium",
+      "notes": "DOW: 0=Sunday, 1=Monday, etc. Shows ordering patterns by weekday."
+    },
+    {
+      "id": 60,
+      "question": "What's the revenue in Curitiba city?",
+      "sql": "SELECT SUM(oi.price) AS revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN customers c ON o.customer_id = c.customer_id WHERE o.order_status = 'delivered' AND LOWER(c.customer_city) = 'curitiba'",
+      "category": "geographic",
+      "difficulty": "medium",
+      "notes": "Use LOWER() for case-insensitive city matching. 3-table join."
+    },
+    {
+      "id": 61,
+      "question": "How many orders were canceled?",
+      "sql": "SELECT COUNT(DISTINCT order_id) AS canceled_orders FROM orders WHERE order_status = 'canceled'",
+      "category": "general",
+      "difficulty": "easy",
+      "notes": "Filter by canceled status. About 1% of orders are canceled."
+    },
+    {
+      "id": 62,
+      "question": "What's the total payment value for each order?",
+      "sql": "SELECT order_id, SUM(payment_value) AS total_payment FROM payments GROUP BY order_id ORDER BY total_payment DESC",
+      "category": "payment",
+      "difficulty": "easy",
+      "notes": "CRITICAL: Must SUM payment_value per order_id due to payment_sequential."
+    },
+    {
+      "id": 63,
+      "question": "Show me sellers with revenue over R$100,000",
+      "sql": "SELECT s.seller_id, s.seller_city, s.seller_state, SUM(oi.price) AS revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN sellers s ON oi.seller_id = s.seller_id WHERE o.order_status = 'delivered' GROUP BY s.seller_id, s.seller_city, s.seller_state HAVING SUM(oi.price) > 100000 ORDER BY revenue DESC",
+      "category": "seller",
+      "difficulty": "medium",
+      "notes": "Use HAVING for filtering aggregated values. 3-table join."
+    },
+    {
+      "id": 64,
+      "question": "What's the average freight cost per order?",
+      "sql": "SELECT AVG(order_freight) AS avg_freight_per_order FROM (SELECT order_id, SUM(freight_value) AS order_freight FROM order_items GROUP BY order_id) AS order_freights",
+      "category": "revenue",
+      "difficulty": "medium",
+      "notes": "Sum freight per order first, then average. Subquery required."
+    },
+    {
+      "id": 65,
+      "question": "How many unique customers ordered in each month of 2017?",
+      "sql": "SELECT EXTRACT(MONTH FROM o.order_purchase_timestamp) AS month, COUNT(DISTINCT c.customer_unique_id) AS unique_customers FROM customers c JOIN orders o ON c.customer_id = o.customer_id WHERE EXTRACT(YEAR FROM o.order_purchase_timestamp) = 2017 GROUP BY EXTRACT(MONTH FROM o.order_purchase_timestamp) ORDER BY month",
+      "category": "customer",
+      "difficulty": "hard",
+      "notes": "CRITICAL: Use customer_unique_id. Join customers to orders, filter by year, group by month."
+    },
+    {
+      "id": 66,
+      "question": "What's the revenue for products weighing less than 1kg?",
+      "sql": "SELECT SUM(oi.price) AS revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN products p ON oi.product_id = p.product_id WHERE o.order_status = 'delivered' AND p.product_weight_g < 1000",
+      "category": "product",
+      "difficulty": "medium",
+      "notes": "1kg = 1000 grams. 3-table join with weight filter."
+    },
+    {
+      "id": 67,
+      "question": "Show me the top 5 states by number of orders",
+      "sql": "SELECT c.customer_state, COUNT(DISTINCT o.order_id) AS order_count FROM orders o JOIN customers c ON o.customer_id = c.customer_id GROUP BY c.customer_state ORDER BY order_count DESC LIMIT 5",
+      "category": "geographic",
+      "difficulty": "easy",
+      "notes": "Count all orders (no delivered filter). Group by state."
+    },
+    {
+      "id": 68,
+      "question": "What percentage of reviews are 4 or 5 stars?",
+      "sql": "SELECT (COUNT(CASE WHEN review_score >= 4 THEN 1 END) * 100.0 / COUNT(*)) AS positive_review_percentage FROM reviews",
+      "category": "review",
+      "difficulty": "medium",
+      "notes": "Use CASE to count high scores, divide by total, multiply by 100."
+    },
+    {
+      "id": 69,
+      "question": "How many orders used vouchers as part of payment?",
+      "sql": "SELECT COUNT(DISTINCT order_id) AS orders_with_vouchers FROM payments WHERE payment_type = 'voucher'",
+      "category": "payment",
+      "difficulty": "easy",
+      "notes": "Count distinct orders with voucher payment type. About 6% of orders."
+    },
+    {
+      "id": 70,
+      "question": "What's the revenue by category and state?",
+      "sql": "SELECT ct.product_category_name_english AS category, c.customer_state, SUM(oi.price) AS revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN products p ON oi.product_id = p.product_id JOIN category_translation ct ON p.product_category_name = ct.product_category_name JOIN customers c ON o.customer_id = c.customer_id WHERE o.order_status = 'delivered' AND p.product_category_name IS NOT NULL GROUP BY ct.product_category_name_english, c.customer_state ORDER BY revenue DESC",
+      "category": "multi_complex",
+      "difficulty": "very_hard",
+      "notes": "5-table join. Multi-dimensional: category + state. Complex aggregation."
+    },
+    {
+      "id": 71,
+      "question": "Show me average review score by seller",
+      "sql": "SELECT s.seller_id, AVG(r.review_score) AS avg_score FROM reviews r JOIN order_items oi ON r.order_id = oi.order_id JOIN sellers s ON oi.seller_id = s.seller_id GROUP BY s.seller_id ORDER BY avg_score DESC",
+      "category": "seller",
+      "difficulty": "medium",
+      "notes": "3-table join. Reviews → order_items → sellers."
+    },
+    {
+      "id": 72,
+      "question": "How many orders were placed on weekends?",
+      "sql": "SELECT COUNT(DISTINCT order_id) AS weekend_orders FROM orders WHERE EXTRACT(DOW FROM order_purchase_timestamp) IN (0, 6)",
+      "category": "time",
+      "difficulty": "medium",
+      "notes": "DOW 0=Sunday, 6=Saturday. Filter for weekend days."
+    },
+    {
+      "id": 73,
+      "question": "What's the total value paid via credit card?",
+      "sql": "SELECT SUM(payment_value) AS total_credit_card_value FROM payments WHERE payment_type = 'credit_card'",
+      "category": "payment",
+      "difficulty": "easy",
+      "notes": "Filter by credit card type, sum payment values. About 74% of total."
+    },
+    {
+      "id": 74,
+      "question": "Which seller city has the highest revenue?",
+      "sql": "SELECT s.seller_city, SUM(oi.price) AS revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN sellers s ON oi.seller_id = s.seller_id WHERE o.order_status = 'delivered' GROUP BY s.seller_city ORDER BY revenue DESC LIMIT 1",
+      "category": "seller",
+      "difficulty": "medium",
+      "notes": "Group by seller city (where seller is located). 3-table join."
+    },
+    {
+      "id": 75,
+      "question": "How many customers are from each state?",
+      "sql": "SELECT customer_state, COUNT(DISTINCT customer_unique_id) AS customer_count FROM customers GROUP BY customer_state ORDER BY customer_count DESC",
+      "category": "geographic",
+      "difficulty": "easy",
+      "notes": "CRITICAL: Use customer_unique_id. Group by state."
+    },
+    {
+      "id": 76,
+      "question": "What's the revenue for orders placed in January 2018?",
+      "sql": "SELECT SUM(oi.price) AS revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id WHERE o.order_status = 'delivered' AND EXTRACT(YEAR FROM o.order_purchase_timestamp) = 2018 AND EXTRACT(MONTH FROM o.order_purchase_timestamp) = 1",
+      "category": "time",
+      "difficulty": "medium",
+      "notes": "Filter by specific year and month. Use order_purchase_timestamp."
+    },
+    {
+      "id": 77,
+      "question": "Show me products with more than 5 photos",
+      "sql": "SELECT COUNT(DISTINCT product_id) AS products_with_many_photos FROM products WHERE product_photos_qty > 5",
+      "category": "product",
+      "difficulty": "easy",
+      "notes": "Filter by photo count. More photos might indicate premium listings."
+    },
+    {
+      "id": 78,
+      "question": "What's the average number of items per order?",
+      "sql": "SELECT AVG(item_count) AS avg_items_per_order FROM (SELECT order_id, COUNT(*) AS item_count FROM order_items GROUP BY order_id) AS order_item_counts",
+      "category": "general",
+      "difficulty": "medium",
+      "notes": "Count items per order first, then average. Subquery required."
+    },
+    {
+      "id": 79,
+      "question": "How many orders have review scores below 3?",
+      "sql": "SELECT COUNT(DISTINCT order_id) AS low_score_orders FROM reviews WHERE review_score < 3",
+      "category": "review",
+      "difficulty": "easy",
+      "notes": "Filter reviews with score 1 or 2 (unhappy customers)."
+    },
+    {
+      "id": 80,
+      "question": "What's the revenue from top 10 customers?",
+      "sql": "SELECT SUM(total_spent) AS top_customers_revenue FROM (SELECT c.customer_unique_id, SUM(p.payment_value) AS total_spent FROM customers c JOIN orders o ON c.customer_id = o.customer_id JOIN payments p ON o.order_id = p.order_id WHERE o.order_status = 'delivered' GROUP BY c.customer_unique_id ORDER BY total_spent DESC LIMIT 10) AS top_10",
+      "category": "customer",
+      "difficulty": "very_hard",
+      "notes": "CRITICAL: Group by customer_unique_id, get top 10, then sum their totals. Complex nested query."
+    },
+    {
+      "id": 81,
+      "question": "Show me revenue by month for all available data",
+      "sql": "SELECT EXTRACT(YEAR FROM o.order_purchase_timestamp) AS year, EXTRACT(MONTH FROM o.order_purchase_timestamp) AS month, SUM(oi.price) AS revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id WHERE o.order_status = 'delivered' GROUP BY EXTRACT(YEAR FROM o.order_purchase_timestamp), EXTRACT(MONTH FROM o.order_purchase_timestamp) ORDER BY year, month",
+      "category": "time",
+      "difficulty": "medium",
+      "notes": "Group by year and month. Covers 2016-2018 data range."
+    },
+    {
+      "id": 82,
+      "question": "Which payment method has the highest average order value?",
+      "sql": "SELECT p.payment_type, AVG(order_total) AS avg_order_value FROM (SELECT order_id, payment_type, SUM(payment_value) AS order_total FROM payments GROUP BY order_id, payment_type) AS p GROUP BY p.payment_type ORDER BY avg_order_value DESC LIMIT 1",
+      "category": "payment",
+      "difficulty": "hard",
+      "notes": "CRITICAL: Sum payments per order first, then average by payment type. Complex aggregation."
+    },
+    {
+      "id": 83,
+      "question": "How many products have dimensions greater than 50cm in any direction?",
+      "sql": "SELECT COUNT(DISTINCT product_id) AS large_products FROM products WHERE product_length_cm > 50 OR product_height_cm > 50 OR product_width_cm > 50",
+      "category": "product",
+      "difficulty": "easy",
+      "notes": "Use OR to check any dimension exceeds 50cm. Large/bulky items."
+    },
+    {
+      "id": 84,
+      "question": "What's the revenue for each seller in São Paulo state?",
+      "sql": "SELECT s.seller_id, s.seller_city, SUM(oi.price) AS revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN sellers s ON oi.seller_id = s.seller_id WHERE o.order_status = 'delivered' AND s.seller_state = 'SP' GROUP BY s.seller_id, s.seller_city ORDER BY revenue DESC",
+      "category": "seller",
+      "difficulty": "medium",
+      "notes": "Filter by seller state SP. 3-table join, group by seller."
+    },
+    {
+      "id": 85,
+      "question": "How many customers made their first purchase in 2017?",
+      "sql": "SELECT COUNT(DISTINCT customer_unique_id) AS new_customers_2017 FROM (SELECT c.customer_unique_id, MIN(o.order_purchase_timestamp) AS first_purchase FROM customers c JOIN orders o ON c.customer_id = o.customer_id GROUP BY c.customer_unique_id) AS first_purchases WHERE EXTRACT(YEAR FROM first_purchase) = 2017",
+      "category": "customer",
+      "difficulty": "very_hard",
+      "notes": "CRITICAL: Find MIN(order date) per customer_unique_id, then filter by year. Complex subquery."
+    },
+    {
+      "id": 86,
+      "question": "What's the average price of products in the electronics category?",
+      "sql": "SELECT AVG(oi.price) AS avg_electronics_price FROM order_items oi JOIN products p ON oi.product_id = p.product_id JOIN category_translation ct ON p.product_category_name = ct.product_category_name WHERE ct.product_category_name_english = 'electronics'",
+      "category": "product",
+      "difficulty": "medium",
+      "notes": "Filter by English category name. Average item price from order_items."
+    },
+    {
+      "id": 87,
+      "question": "Show me the number of orders per hour of the day",
+      "sql": "SELECT EXTRACT(HOUR FROM order_purchase_timestamp) AS hour, COUNT(DISTINCT order_id) AS order_count FROM orders GROUP BY EXTRACT(HOUR FROM order_purchase_timestamp) ORDER BY hour",
+      "category": "time",
+      "difficulty": "medium",
+      "notes": "Extract hour (0-23) from timestamp. Shows ordering patterns by time of day."
+    },
+    {
+      "id": 88,
+      "question": "How many orders used debit card?",
+      "sql": "SELECT COUNT(DISTINCT order_id) AS debit_card_orders FROM payments WHERE payment_type = 'debit_card'",
+      "category": "payment",
+      "difficulty": "easy",
+      "notes": "Filter by debit card type. About 1% of orders use debit cards."
+    },
+    {
+      "id": 89,
+      "question": "What's the total revenue from repeat customers?",
+      "sql": "SELECT SUM(p.payment_value) AS repeat_customer_revenue FROM customers c JOIN orders o ON c.customer_id = o.customer_id JOIN payments p ON o.order_id = p.order_id WHERE o.order_status = 'delivered' AND c.customer_unique_id IN (SELECT customer_unique_id FROM customers c2 JOIN orders o2 ON c2.customer_id = o2.customer_id GROUP BY customer_unique_id HAVING COUNT(DISTINCT o2.order_id) > 1)",
+      "category": "customer",
+      "difficulty": "very_hard",
+      "notes": "CRITICAL: Identify repeat customers (>1 order by customer_unique_id), then sum their payments. Complex nested query."
+    },
+    {
+      "id": 90,
+      "question": "Which category has the highest average review score?",
+      "sql": "SELECT ct.product_category_name_english AS category, AVG(r.review_score) AS avg_score FROM reviews r JOIN order_items oi ON r.order_id = oi.order_id JOIN products p ON oi.product_id = p.product_id JOIN category_translation ct ON p.product_category_name = ct.product_category_name WHERE p.product_category_name IS NOT NULL GROUP BY ct.product_category_name_english ORDER BY avg_score DESC LIMIT 1",
+      "category": "multi_complex",
+      "difficulty": "hard",
+      "notes": "4-table join. Group by category, find highest average score."
+    },
+    {
+      "id": 91,
+      "question": "How many orders were shipped but not yet delivered?",
+      "sql": "SELECT COUNT(DISTINCT order_id) AS shipped_orders FROM orders WHERE order_status = 'shipped'",
+      "category": "general",
+      "difficulty": "easy",
+      "notes": "Filter by shipped status. Orders in transit (about 1% of total)."
+    },
+    {
+      "id": 92,
+      "question": "What's the revenue in the top 3 cities combined?",
+      "sql": "SELECT SUM(revenue) AS top_3_cities_revenue FROM (SELECT c.customer_city, SUM(oi.price) AS revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN customers c ON o.customer_id = c.customer_id WHERE o.order_status = 'delivered' GROUP BY c.customer_city ORDER BY revenue DESC LIMIT 3) AS top_cities",
+      "category": "geographic",
+      "difficulty": "hard",
+      "notes": "Get top 3 cities by revenue, then sum their totals. Nested query."
+    },
+    {
+      "id": 93,
+      "question": "Show me the distribution of payment installments for credit cards",
+      "sql": "SELECT payment_installments, COUNT(*) AS payment_count FROM payments WHERE payment_type = 'credit_card' GROUP BY payment_installments ORDER BY payment_installments",
+      "category": "payment",
+      "difficulty": "easy",
+      "notes": "Group by installment count. Shows common installment patterns (1-24 months)."
+    },
+    {
+      "id": 94,
+      "question": "What's the average weight of products sold?",
+      "sql": "SELECT AVG(p.product_weight_g) AS avg_weight_grams FROM order_items oi JOIN products p ON oi.product_id = p.product_id WHERE p.product_weight_g IS NOT NULL",
+      "category": "product",
+      "difficulty": "easy",
+      "notes": "Join order_items to products, average weight. Filter out NULL weights."
+    },
+    {
+      "id": 95,
+      "question": "How many unique products were sold?",
+      "sql": "SELECT COUNT(DISTINCT product_id) AS products_sold FROM order_items",
+      "category": "product",
+      "difficulty": "easy",
+      "notes": "Count distinct products from order_items (products actually purchased)."
+    },
+    {
+      "id": 96,
+      "question": "What's the revenue by customer state and category?",
+      "sql": "SELECT c.customer_state, ct.product_category_name_english AS category, SUM(oi.price) AS revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN products p ON oi.product_id = p.product_id JOIN category_translation ct ON p.product_category_name = ct.product_category_name JOIN customers c ON o.customer_id = c.customer_id WHERE o.order_status = 'delivered' AND p.product_category_name IS NOT NULL GROUP BY c.customer_state, ct.product_category_name_english ORDER BY revenue DESC",
+      "category": "multi_complex",
+      "difficulty": "very_hard",
+      "notes": "5-table join. Multi-dimensional: state + category. Maximum complexity."
+    },
+    {
+      "id": 97,
+      "question": "Show me sellers who have fulfilled over 100 orders",
+      "sql": "SELECT s.seller_id, s.seller_city, s.seller_state, COUNT(DISTINCT oi.order_id) AS order_count FROM order_items oi JOIN sellers s ON oi.seller_id = s.seller_id GROUP BY s.seller_id, s.seller_city, s.seller_state HAVING COUNT(DISTINCT oi.order_id) > 100 ORDER BY order_count DESC",
+      "category": "seller",
+      "difficulty": "medium",
+      "notes": "Use HAVING to filter aggregated counts. High-volume sellers."
+    },
+    {
+      "id": 98,
+      "question": "What percentage of customers are repeat customers?",
+      "sql": "SELECT (COUNT(DISTINCT CASE WHEN order_count > 1 THEN customer_unique_id END) * 100.0 / COUNT(DISTINCT customer_unique_id)) AS repeat_customer_percentage FROM (SELECT c.customer_unique_id, COUNT(DISTINCT o.order_id) AS order_count FROM customers c JOIN orders o ON c.customer_id = o.customer_id GROUP BY c.customer_unique_id) AS customer_orders",
+      "category": "customer",
+      "difficulty": "very_hard",
+      "notes": "CRITICAL: Count customers with >1 order, divide by total customers. Complex calculation."
+    },
+    {
+      "id": 99,
+      "question": "How many reviews were submitted within 7 days of delivery?",
+      "sql": "SELECT COUNT(*) AS quick_reviews FROM reviews r JOIN orders o ON r.order_id = o.order_id WHERE o.order_delivered_customer_date IS NOT NULL AND r.review_creation_date <= o.order_delivered_customer_date + INTERVAL '7 days'",
+      "category": "review",
+      "difficulty": "medium",
+      "notes": "Calculate date difference. Filter reviews within 7 days post-delivery."
+    },
+    {
+      "id": 100,
+      "question": "What's the total freight cost by state?",
+      "sql": "SELECT c.customer_state, SUM(oi.freight_value) AS total_freight FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN customers c ON o.customer_id = c.customer_id WHERE o.order_status = 'delivered' GROUP BY c.customer_state ORDER BY total_freight DESC",
+      "category": "geographic",
+      "difficulty": "medium",
+      "notes": "Sum freight_value by customer state. Shows shipping costs by region."
+    },
+    {
+      "id": 101,
+      "question": "Show me the average order value by payment type",
+      "sql": "SELECT p.payment_type, AVG(order_total) AS avg_order_value FROM (SELECT order_id, payment_type, SUM(payment_value) AS order_total FROM payments GROUP BY order_id, payment_type) AS order_values GROUP BY p.payment_type ORDER BY avg_order_value DESC",
+      "category": "payment",
+      "difficulty": "hard",
+      "notes": "CRITICAL: Sum payments per order first, then average by payment type."
+    },
+    {
+      "id": 102,
+      "question": "How many orders contain products from multiple sellers?",
+      "sql": "SELECT COUNT(DISTINCT order_id) AS multi_seller_orders FROM (SELECT order_id FROM order_items GROUP BY order_id HAVING COUNT(DISTINCT seller_id) > 1) AS multi_seller",
+      "category": "seller",
+      "difficulty": "medium",
+      "notes": "Count distinct sellers per order, filter where count > 1."
+    },
+    {
+      "id": 103,
+      "question": "What's the revenue for products in the toys category?",
+      "sql": "SELECT SUM(oi.price) AS toys_revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN products p ON oi.product_id = p.product_id JOIN category_translation ct ON p.product_category_name = ct.product_category_name WHERE o.order_status = 'delivered' AND ct.product_category_name_english = 'toys'",
+      "category": "product",
+      "difficulty": "hard",
+      "notes": "4-table join. Filter by specific English category name."
+    },
+    {
+      "id": 104,
+      "question": "Show me the top 5 products by number of orders",
+      "sql": "SELECT p.product_id, ct.product_category_name_english AS category, COUNT(DISTINCT oi.order_id) AS order_count FROM order_items oi JOIN products p ON oi.product_id = p.product_id JOIN category_translation ct ON p.product_category_name = ct.product_category_name WHERE p.product_category_name IS NOT NULL GROUP BY p.product_id, ct.product_category_name_english ORDER BY order_count DESC LIMIT 5",
+      "category": "product",
+      "difficulty": "medium",
+      "notes": "Count orders per product. Include category for context."
+    },
+    {
+      "id": 105,
+      "question": "What's the average delivery time for orders in 2018?",
+      "sql": "SELECT AVG(EXTRACT(EPOCH FROM (order_delivered_customer_date - order_purchase_timestamp))/86400) AS avg_delivery_days FROM orders WHERE EXTRACT(YEAR FROM order_purchase_timestamp) = 2018 AND order_delivered_customer_date IS NOT NULL",
+      "category": "time",
+      "difficulty": "medium",
+      "notes": "Calculate time difference in days. Filter 2018 and non-NULL deliveries."
+    },
+    {
+      "id": 106,
+      "question": "How many customers placed orders in both 2017 and 2018?",
+      "sql": "SELECT COUNT(DISTINCT c.customer_unique_id) AS customers_both_years FROM customers c JOIN orders o ON c.customer_id = o.customer_id WHERE EXTRACT(YEAR FROM o.order_purchase_timestamp) IN (2017, 2018) GROUP BY c.customer_unique_id HAVING COUNT(DISTINCT EXTRACT(YEAR FROM o.order_purchase_timestamp)) = 2",
+      "category": "customer",
+      "difficulty": "very_hard",
+      "notes": "CRITICAL: Group by customer_unique_id, filter HAVING distinct years = 2. Active customers across years."
+    },
+    {
+      "id": 107,
+      "question": "What's the total number of items sold?",
+      "sql": "SELECT COUNT(*) AS total_items_sold FROM order_items oi JOIN orders o ON oi.order_id = o.order_id WHERE o.order_status = 'delivered'",
+      "category": "general",
+      "difficulty": "easy",
+      "notes": "Count all items in delivered orders. Different from counting orders."
+    },
+    {
+      "id": 108,
+      "question": "Show me revenue by seller city in Rio de Janeiro state",
+      "sql": "SELECT s.seller_city, SUM(oi.price) AS revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN sellers s ON oi.seller_id = s.seller_id WHERE o.order_status = 'delivered' AND s.seller_state = 'RJ' GROUP BY s.seller_city ORDER BY revenue DESC",
+      "category": "seller",
+      "difficulty": "medium",
+      "notes": "Filter by seller state RJ. Group by seller city within that state."
+    },
+    {
+      "id": 109,
+      "question": "What's the average review score for orders over R$500?",
+      "sql": "SELECT AVG(r.review_score) AS avg_score FROM reviews r JOIN orders o ON r.order_id = o.order_id JOIN payments p ON o.order_id = p.order_id WHERE o.order_status = 'delivered' GROUP BY o.order_id HAVING SUM(p.payment_value) > 500",
+      "category": "multi_complex",
+      "difficulty": "hard",
+      "notes": "CRITICAL: Sum payments per order first, filter >500, then average review scores."
+    },
+    {
+      "id": 110,
+      "question": "How many orders were placed in Q4 2017?",
+      "sql": "SELECT COUNT(DISTINCT order_id) AS q4_2017_orders FROM orders WHERE EXTRACT(YEAR FROM order_purchase_timestamp) = 2017 AND EXTRACT(QUARTER FROM order_purchase_timestamp) = 4",
+      "category": "time",
+      "difficulty": "medium",
+      "notes": "Q4 = October-December. Use EXTRACT(QUARTER) for filtering."
+    },
+    {
+      "id": 111,
+      "question": "What's the revenue from customers who paid with boleto?",
+      "sql": "SELECT SUM(oi.price) AS boleto_revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN payments p ON o.order_id = p.order_id WHERE o.order_status = 'delivered' AND p.payment_type = 'boleto'",
+      "category": "payment",
+      "difficulty": "medium",
+      "notes": "Filter by boleto payment type. 3-table join."
+    },
+    {
+      "id": 112,
+      "question": "Show me the number of customers by city in São Paulo state",
+      "sql": "SELECT customer_city, COUNT(DISTINCT customer_unique_id) AS customer_count FROM customers WHERE customer_state = 'SP' GROUP BY customer_city ORDER BY customer_count DESC",
+      "category": "geographic",
+      "difficulty": "easy",
+      "notes": "CRITICAL: Use customer_unique_id. Filter by state SP, group by city."
+    },
+    {
+      "id": 113,
+      "question": "What's the total value of orders with 10 or more installments?",
+      "sql": "SELECT SUM(payment_value) AS high_installment_value FROM payments WHERE payment_installments >= 10",
+      "category": "payment",
+      "difficulty": "easy",
+      "notes": "Filter by installment count. High installments indicate expensive purchases."
+    },
+    {
+      "id": 114,
+      "question": "How many categories have average review scores above 4?",
+      "sql": "SELECT COUNT(*) AS high_rated_categories FROM (SELECT ct.product_category_name_english AS category, AVG(r.review_score) AS avg_score FROM reviews r JOIN order_items oi ON r.order_id = oi.order_id JOIN products p ON oi.product_id = p.product_id JOIN category_translation ct ON p.product_category_name = ct.product_category_name WHERE p.product_category_name IS NOT NULL GROUP BY ct.product_category_name_english HAVING AVG(r.review_score) > 4) AS high_rated",
+      "category": "review",
+      "difficulty": "hard",
+      "notes": "Calculate avg score per category, filter HAVING > 4, count categories."
+    },
+    {
+      "id": 115,
+      "question": "What's the revenue per customer segment by order frequency?",
+      "sql": "SELECT CASE WHEN order_count = 1 THEN 'One-time' WHEN order_count BETWEEN 2 AND 4 THEN 'Occasional' ELSE 'Frequent' END AS segment, SUM(total_spent) AS revenue FROM (SELECT c.customer_unique_id, COUNT(DISTINCT o.order_id) AS order_count, SUM(p.payment_value) AS total_spent FROM customers c JOIN orders o ON c.customer_id = o.customer_id JOIN payments p ON o.order_id = p.order_id WHERE o.order_status = 'delivered' GROUP BY c.customer_unique_id) AS customer_segments GROUP BY segment ORDER BY revenue DESC",
+      "category": "customer",
+      "difficulty": "very_hard",
+      "notes": "CRITICAL: Segment by customer_unique_id order count. Complex CASE statement with nested aggregation."
+    },
+    {
+      "id": 116,
+      "question": "Show me sellers with no sales in 2018",
+      "sql": "SELECT s.seller_id, s.seller_city, s.seller_state FROM sellers s WHERE s.seller_id NOT IN (SELECT DISTINCT oi.seller_id FROM order_items oi JOIN orders o ON oi.order_id = o.order_id WHERE EXTRACT(YEAR FROM o.order_purchase_timestamp) = 2018 AND o.order_status = 'delivered')",
+      "category": "seller",
+      "difficulty": "hard",
+      "notes": "Use NOT IN to find sellers without 2018 sales. Identifies inactive sellers."
+    },
+    {
+      "id": 117,
+      "question": "What's the average number of photos per product category?",
+      "sql": "SELECT ct.product_category_name_english AS category, AVG(p.product_photos_qty) AS avg_photos FROM products p JOIN category_translation ct ON p.product_category_name = ct.product_category_name WHERE p.product_category_name IS NOT NULL AND p.product_photos_qty IS NOT NULL GROUP BY ct.product_category_name_english ORDER BY avg_photos DESC",
+      "category": "product",
+      "difficulty": "medium",
+      "notes": "Average photos per category. More photos may indicate better listings."
+    },
+    {
+      "id": 118,
+      "question": "How many orders were delivered late?",
+      "sql": "SELECT COUNT(DISTINCT order_id) AS late_deliveries FROM orders WHERE order_delivered_customer_date > order_estimated_delivery_date AND order_delivered_customer_date IS NOT NULL",
+      "category": "time",
+      "difficulty": "medium",
+      "notes": "Compare actual vs estimated delivery dates. Late = actual > estimated."
+    },
+    {
+      "id": 119,
+      "question": "What's the revenue from orders with review scores of 1 or 2?",
+      "sql": "SELECT SUM(oi.price) AS low_satisfaction_revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN reviews r ON o.order_id = r.order_id WHERE o.order_status = 'delivered' AND r.review_score <= 2",
+      "category": "multi_complex",
+      "difficulty": "medium",
+      "notes": "Filter low scores (unhappy customers). 3-table join."
+    },
+    {
+      "id": 120,
+      "question": "Show me the top 10 customer states by average order value",
+      "sql": "SELECT c.customer_state, AVG(order_total) AS avg_order_value FROM (SELECT o.order_id, c.customer_state, SUM(p.payment_value) AS order_total FROM orders o JOIN payments p ON o.order_id = p.order_id JOIN customers c ON o.customer_id = c.customer_id WHERE o.order_status = 'delivered' GROUP BY o.order_id, c.customer_state) AS order_values GROUP BY customer_state ORDER BY avg_order_value DESC LIMIT 10",
+      "category": "geographic",
+      "difficulty": "very_hard",
+      "notes": "CRITICAL: Calculate order total first (SUM payments), then average by state. Complex nested query."
+    },
+    {
+      "id": 121,
+      "question": "How many orders contain only one item?",
+      "sql": "SELECT COUNT(DISTINCT order_id) AS single_item_orders FROM (SELECT order_id FROM order_items GROUP BY order_id HAVING COUNT(*) = 1) AS single_items",
+      "category": "general",
+      "difficulty": "medium",
+      "notes": "Count items per order, filter where count = 1."
+    },
+    {
+      "id": 122,
+      "question": "What's the total revenue from the furniture_decor category?",
+      "sql": "SELECT SUM(oi.price) AS furniture_revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN products p ON oi.product_id = p.product_id JOIN category_translation ct ON p.product_category_name = ct.product_category_name WHERE o.order_status = 'delivered' AND ct.product_category_name_english = 'furniture_decor'",
+      "category": "product",
+      "difficulty": "hard",
+      "notes": "4-table join. Filter by specific English category name."
+    },
+    {
+      "id": 123,
+      "question": "Show me the percentage of orders by payment type",
+      "sql": "SELECT payment_type, (COUNT(DISTINCT order_id) * 100.0 / (SELECT COUNT(DISTINCT order_id) FROM payments)) AS percentage FROM payments GROUP BY payment_type ORDER BY percentage DESC",
+      "category": "payment",
+      "difficulty": "medium",
+      "notes": "Calculate percentage using subquery for total. Shows payment method distribution."
+    },
+    {
+      "id": 124,
+      "question": "How many unique customers made purchases each quarter in 2017?",
+      "sql": "SELECT EXTRACT(QUARTER FROM o.order_purchase_timestamp) AS quarter, COUNT(DISTINCT c.customer_unique_id) AS unique_customers FROM customers c JOIN orders o ON c.customer_id = o.customer_id WHERE EXTRACT(YEAR FROM o.order_purchase_timestamp) = 2017 GROUP BY EXTRACT(QUARTER FROM o.order_purchase_timestamp) ORDER BY quarter",
+      "category": "customer",
+      "difficulty": "hard",
+      "notes": "CRITICAL: Use customer_unique_id. Group by quarter within 2017."
+    },
+    {
+      "id": 125,
+      "question": "What's the revenue from orders shipped by each seller in Curitiba?",
+      "sql": "SELECT s.seller_id, SUM(oi.price) AS revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN sellers s ON oi.seller_id = s.seller_id WHERE o.order_status = 'delivered' AND LOWER(s.seller_city) = 'curitiba' GROUP BY s.seller_id ORDER BY revenue DESC",
+      "category": "seller",
+      "difficulty": "medium",
+      "notes": "Filter by seller city using LOWER(). 3-table join."
+    },
+    {
+      "id": 126,
+      "question": "How many orders have freight costs over R$50?",
+      "sql": "SELECT COUNT(DISTINCT order_id) AS high_freight_orders FROM (SELECT order_id FROM order_items GROUP BY order_id HAVING SUM(freight_value) > 50) AS high_freight",
+      "category": "general",
+      "difficulty": "medium",
+      "notes": "Sum freight per order, filter where total > 50. High shipping cost orders."
+    },
+    {
+      "id": 127,
+      "question": "What's the average review score by payment method?",
+      "sql": "SELECT p.payment_type, AVG(r.review_score) AS avg_score FROM reviews r JOIN orders o ON r.order_id = o.order_id JOIN payments p ON o.order_id = p.order_id GROUP BY p.payment_type ORDER BY avg_score DESC",
+      "category": "multi_complex",
+      "difficulty": "medium",
+      "notes": "3-table join. Group by payment type, average review scores."
+    },
+    {
+      "id": 128,
+      "question": "Show me products with weight between 1kg and 5kg",
+      "sql": "SELECT COUNT(DISTINCT product_id) AS medium_weight_products FROM products WHERE product_weight_g BETWEEN 1000 AND 5000",
+      "category": "product",
+      "difficulty": "easy",
+      "notes": "1kg=1000g, 5kg=5000g. Use BETWEEN for range filtering."
+    },
+    {
+      "id": 129,
+      "question": "What's the revenue by month in 2018?",
+      "sql": "SELECT EXTRACT(MONTH FROM o.order_purchase_timestamp) AS month, SUM(oi.price) AS revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id WHERE o.order_status = 'delivered' AND EXTRACT(YEAR FROM o.order_purchase_timestamp) = 2018 GROUP BY EXTRACT(MONTH FROM o.order_purchase_timestamp) ORDER BY month",
+      "category": "time",
+      "difficulty": "medium",
+      "notes": "Note: 2018 data is incomplete (ends October 17)."
+    },
+    {
+      "id": 130,
+      "question": "How many customers have spent over R$1000 total?",
+      "sql": "SELECT COUNT(*) AS high_value_customers FROM (SELECT c.customer_unique_id, SUM(p.payment_value) AS total_spent FROM customers c JOIN orders o ON c.customer_id = o.customer_id JOIN payments p ON o.order_id = p.order_id WHERE o.order_status = 'delivered' GROUP BY c.customer_unique_id HAVING SUM(p.payment_value) > 1000) AS high_spenders",
+      "category": "customer",
+      "difficulty": "hard",
+      "notes": "CRITICAL: Group by customer_unique_id, filter HAVING total > 1000."
+    },
+    {
+      "id": 131,
+      "question": "What's the total number of sellers by state?",
+      "sql": "SELECT seller_state, COUNT(DISTINCT seller_id) AS seller_count FROM sellers GROUP BY seller_state ORDER BY seller_count DESC",
+      "category": "seller",
+      "difficulty": "easy",
+      "notes": "Count unique sellers per state. Shows seller distribution."
+    },
+    {
+      "id": 132,
+      "question": "Show me revenue from orders with 2 or more items",
+      "sql": "SELECT SUM(oi.price) AS multi_item_revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id WHERE o.order_status = 'delivered' AND oi.order_id IN (SELECT order_id FROM order_items GROUP BY order_id HAVING COUNT(*) >= 2)",
+      "category": "revenue",
+      "difficulty": "medium",
+      "notes": "Filter orders with 2+ items using subquery. Basket size analysis."
+    },
+    {
+      "id": 133,
+      "question": "What's the average freight cost by product category?",
+      "sql": "SELECT ct.product_category_name_english AS category, AVG(oi.freight_value) AS avg_freight FROM order_items oi JOIN products p ON oi.product_id = p.product_id JOIN category_translation ct ON p.product_category_name = ct.product_category_name WHERE p.product_category_name IS NOT NULL GROUP BY ct.product_category_name_english ORDER BY avg_freight DESC",
+      "category": "product",
+      "difficulty": "medium",
+      "notes": "Heavy/bulky categories will have higher freight. 3-table join."
+    },
+    {
+      "id": 134,
+      "question": "How many orders were processed (not delivered or canceled)?",
+      "sql": "SELECT COUNT(DISTINCT order_id) AS processing_orders FROM orders WHERE order_status IN ('processing', 'invoiced', 'approved', 'created')",
+      "category": "general",
+      "difficulty": "easy",
+      "notes": "Filter by intermediate statuses. Orders in fulfillment pipeline."
+    },
+    {
+      "id": 135,
+      "question": "What's the revenue contribution of each state as a percentage?",
+      "sql": "SELECT c.customer_state, (SUM(oi.price) * 100.0 / (SELECT SUM(oi2.price) FROM order_items oi2 JOIN orders o2 ON oi2.order_id = o2.order_id WHERE o2.order_status = 'delivered')) AS revenue_percentage FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN customers c ON o.customer_id = c.customer_id WHERE o.order_status = 'delivered' GROUP BY c.customer_state ORDER BY revenue_percentage DESC",
+      "category": "geographic",
+      "difficulty": "very_hard",
+      "notes": "Calculate each state's revenue as % of total. Complex nested aggregation."
+    },
+    {
+      "id": 136,
+      "question": "Show me the top 5 categories by number of reviews",
+      "sql": "SELECT ct.product_category_name_english AS category, COUNT(DISTINCT r.review_id) AS review_count FROM reviews r JOIN order_items oi ON r.order_id = oi.order_id JOIN products p ON oi.product_id = p.product_id JOIN category_translation ct ON p.product_category_name = ct.product_category_name WHERE p.product_category_name IS NOT NULL GROUP BY ct.product_category_name_english ORDER BY review_count DESC LIMIT 5",
+      "category": "review",
+      "difficulty": "hard",
+      "notes": "4-table join. Count reviews per category."
+    },
+    {
+      "id": 137,
+      "question": "What's the average time between order placement and approval?",
+      "sql": "SELECT AVG(EXTRACT(EPOCH FROM (order_approved_at - order_purchase_timestamp))/3600) AS avg_approval_hours FROM orders WHERE order_approved_at IS NOT NULL",
+      "category": "time",
+      "difficulty": "medium",
+      "notes": "Calculate time difference in hours. Payment processing time."
+    },
+    {
+      "id": 138,
+      "question": "How many customers placed exactly 2 orders?",
+      "sql": "SELECT COUNT(*) AS two_order_customers FROM (SELECT customer_unique_id FROM customers c JOIN orders o ON c.customer_id = o.customer_id GROUP BY customer_unique_id HAVING COUNT(DISTINCT o.order_id) = 2) AS two_orders",
+      "category": "customer",
+      "difficulty": "hard",
+      "notes": "CRITICAL: Group by customer_unique_id, filter HAVING count = 2 exactly."
+    },
+    {
+      "id": 139,
+      "question": "What's the total revenue from orders with vouchers included?",
+      "sql": "SELECT SUM(oi.price) AS voucher_order_revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id WHERE o.order_status = 'delivered' AND o.order_id IN (SELECT DISTINCT order_id FROM payments WHERE payment_type = 'voucher')",
+      "category": "payment",
+      "difficulty": "medium",
+      "notes": "Find orders with voucher payments, sum item prices. Some may have multiple payment types."
+    },
+    {
+      "id": 140,
+      "question": "Show me sellers ranked by average review score",
+      "sql": "SELECT s.seller_id, s.seller_city, s.seller_state, AVG(r.review_score) AS avg_score, COUNT(DISTINCT r.review_id) AS review_count FROM reviews r JOIN order_items oi ON r.order_id = oi.order_id JOIN sellers s ON oi.seller_id = s.seller_id GROUP BY s.seller_id, s.seller_city, s.seller_state HAVING COUNT(DISTINCT r.review_id) >= 10 ORDER BY avg_score DESC",
+      "category": "seller",
+      "difficulty": "hard",
+      "notes": "Filter sellers with 10+ reviews for statistical significance. 3-table join."
+    },
+    {
+      "id": 141,
+      "question": "What's the revenue from orders placed on Mondays?",
+      "sql": "SELECT SUM(oi.price) AS monday_revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id WHERE o.order_status = 'delivered' AND EXTRACT(DOW FROM o.order_purchase_timestamp) = 1",
+      "category": "time",
+      "difficulty": "medium",
+      "notes": "DOW 1 = Monday. Shows day-of-week revenue patterns."
+    },
+    {
+      "id": 142,
+      "question": "How many products have NULL category?",
+      "sql": "SELECT COUNT(DISTINCT product_id) AS uncategorized_products FROM products WHERE product_category_name IS NULL",
+      "category": "product",
+      "difficulty": "easy",
+      "notes": "610 products have NULL category. Data quality check."
+    },
+    {
+      "id": 143,
+      "question": "What's the total value of orders paid in a single installment?",
+      "sql": "SELECT SUM(payment_value) AS single_installment_value FROM payments WHERE payment_installments = 1",
+      "category": "payment",
+      "difficulty": "easy",
+      "notes": "Installments = 1 means paid in full immediately."
+    },
+    {
+      "id": 144,
+      "question": "Show me customer lifetime value by state",
+      "sql": "SELECT c.customer_state, AVG(customer_total) AS avg_lifetime_value FROM (SELECT c.customer_unique_id, c.customer_state, SUM(p.payment_value) AS customer_total FROM customers c JOIN orders o ON c.customer_id = o.customer_id JOIN payments p ON o.order_id = p.order_id WHERE o.order_status = 'delivered' GROUP BY c.customer_unique_id, c.customer_state) AS customer_values GROUP BY customer_state ORDER BY avg_lifetime_value DESC",
+      "category": "customer",
+      "difficulty": "very_hard",
+      "notes": "CRITICAL: Calculate LTV per customer_unique_id first, then average by state. Complex nested query."
+    },
+    {
+      "id": 145,
+      "question": "How many orders were delivered earlier than estimated?",
+      "sql": "SELECT COUNT(DISTINCT order_id) AS early_deliveries FROM orders WHERE order_delivered_customer_date < order_estimated_delivery_date AND order_delivered_customer_date IS NOT NULL",
+      "category": "time",
+      "difficulty": "medium",
+      "notes": "Compare actual vs estimated delivery. Early = actual < estimated."
+    },
+    {
+      "id": 146,
+      "question": "What's the revenue by category for customers in Rio de Janeiro city?",
+      "sql": "SELECT ct.product_category_name_english AS category, SUM(oi.price) AS revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN products p ON oi.product_id = p.product_id JOIN category_translation ct ON p.product_category_name = ct.product_category_name JOIN customers c ON o.customer_id = c.customer_id WHERE o.order_status = 'delivered' AND LOWER(c.customer_city) = 'rio de janeiro' AND p.product_category_name IS NOT NULL GROUP BY ct.product_category_name_english ORDER BY revenue DESC",
+      "category": "multi_complex",
+      "difficulty": "very_hard",
+      "notes": "5-table join. Multi-dimensional: category + specific city."
+    },
+    {
+      "id": 147,
+      "question": "Show me the number of sellers per city in São Paulo state",
+      "sql": "SELECT seller_city, COUNT(DISTINCT seller_id) AS seller_count FROM sellers WHERE seller_state = 'SP' GROUP BY seller_city ORDER BY seller_count DESC",
+      "category": "seller",
+      "difficulty": "easy",
+      "notes": "Filter by state, group by city. Seller distribution within SP."
+    },
+    {
+      "id": 148,
+      "question": "What's the average product price by category?",
+      "sql": "SELECT ct.product_category_name_english AS category, AVG(oi.price) AS avg_price FROM order_items oi JOIN products p ON oi.product_id = p.product_id JOIN category_translation ct ON p.product_category_name = ct.product_category_name WHERE p.product_category_name IS NOT NULL GROUP BY ct.product_category_name_english ORDER BY avg_price DESC",
+      "category": "product",
+      "difficulty": "medium",
+      "notes": "3-table join. Shows price positioning by category."
+    },
+    {
+      "id": 149,
+      "question": "How many orders had all items from the same seller?",
+      "sql": "SELECT COUNT(DISTINCT order_id) AS single_seller_orders FROM (SELECT order_id FROM order_items GROUP BY order_id HAVING COUNT(DISTINCT seller_id) = 1) AS single_seller",
+      "category": "seller",
+      "difficulty": "medium",
+      "notes": "Count distinct sellers per order, filter where count = 1."
+    },
+    {
+      "id": 150,
+      "question": "What's the revenue growth from 2016 to 2017?",
+      "sql": "SELECT (SUM(CASE WHEN EXTRACT(YEAR FROM o.order_purchase_timestamp) = 2017 THEN oi.price ELSE 0 END) - SUM(CASE WHEN EXTRACT(YEAR FROM o.order_purchase_timestamp) = 2016 THEN oi.price ELSE 0 END)) AS revenue_growth FROM order_items oi JOIN orders o ON oi.order_id = o.order_id WHERE o.order_status = 'delivered' AND EXTRACT(YEAR FROM o.order_purchase_timestamp) IN (2016, 2017)",
+      "category": "time",
+      "difficulty": "hard",
+      "notes": "Calculate difference between years. Note: 2016 has only 4 months of data."
+    },
+    {
+      "id": 151,
+      "question": "Show me customers who ordered from multiple states",
+      "sql": "SELECT c.customer_unique_id, COUNT(DISTINCT c2.customer_state) AS state_count FROM customers c JOIN orders o ON c.customer_id = o.customer_id JOIN customers c2 ON o.customer_id = c2.customer_id GROUP BY c.customer_unique_id HAVING COUNT(DISTINCT c2.customer_state) > 1",
+      "category": "customer",
+      "difficulty": "hard",
+      "notes": "CRITICAL: Track customer_unique_id across different addresses. Customers who moved."
+    },
+    {
+      "id": 152,
+      "question": "What's the average number of reviews per category?",
+      "sql": "SELECT ct.product_category_name_english AS category, AVG(review_count) AS avg_reviews_per_product FROM (SELECT p.product_id, ct.product_category_name_english, COUNT(DISTINCT r.review_id) AS review_count FROM products p JOIN category_translation ct ON p.product_category_name = ct.product_category_name LEFT JOIN order_items oi ON p.product_id = oi.product_id LEFT JOIN reviews r ON oi.order_id = r.order_id WHERE p.product_category_name IS NOT NULL GROUP BY p.product_id, ct.product_category_name_english) AS product_reviews GROUP BY category ORDER BY avg_reviews_per_product DESC",
+      "category": "review",
+      "difficulty": "very_hard",
+      "notes": "Count reviews per product first, then average per category. Complex nested query."
+    },
+    {
+      "id": 153,
+      "question": "How many orders contain electronics products?",
+      "sql": "SELECT COUNT(DISTINCT oi.order_id) AS electronics_orders FROM order_items oi JOIN products p ON oi.product_id = p.product_id JOIN category_translation ct ON p.product_category_name = ct.product_category_name WHERE ct.product_category_name_english = 'electronics'",
+      "category": "product",
+      "difficulty": "medium",
+      "notes": "Count orders containing at least one electronics item. 3-table join."
+    },
+    {
+      "id": 154,
+      "question": "What's the total payment value by installment count?",
+      "sql": "SELECT payment_installments, SUM(payment_value) AS total_value FROM payments WHERE payment_type = 'credit_card' GROUP BY payment_installments ORDER BY payment_installments",
+      "category": "payment",
+      "difficulty": "easy",
+      "notes": "Filter credit cards only. Shows value distribution by installment plans."
+    },
+    {
+      "id": 155,
+      "question": "Show me revenue by seller and product category",
+      "sql": "SELECT s.seller_id, s.seller_city, ct.product_category_name_english AS category, SUM(oi.price) AS revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN products p ON oi.product_id = p.product_id JOIN category_translation ct ON p.product_category_name = ct.product_category_name JOIN sellers s ON oi.seller_id = s.seller_id WHERE o.order_status = 'delivered' AND p.product_category_name IS NOT NULL GROUP BY s.seller_id, s.seller_city, ct.product_category_name_english ORDER BY revenue DESC",
+      "category": "multi_complex",
+      "difficulty": "very_hard",
+      "notes": "5-table join. Multi-dimensional: seller + category. Shows seller specializations."
+    },
+    {
+      "id": 156,
+      "question": "How many orders were unavailable?",
+      "sql": "SELECT COUNT(DISTINCT order_id) AS unavailable_orders FROM orders WHERE order_status = 'unavailable'",
+      "category": "general",
+      "difficulty": "easy",
+      "notes": "Products became unavailable after order. About 0.6% of orders."
+    },
+    {
+      "id": 157,
+      "question": "What's the revenue from customers in the top 5 cities?",
+      "sql": "SELECT SUM(oi.price) AS top_5_cities_revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN customers c ON o.customer_id = c.customer_id WHERE o.order_status = 'delivered' AND c.customer_city IN (SELECT customer_city FROM (SELECT customer_city, SUM(oi2.price) AS city_revenue FROM order_items oi2 JOIN orders o2 ON oi2.order_id = o2.order_id JOIN customers c2 ON o2.customer_id = c2.customer_id WHERE o2.order_status = 'delivered' GROUP BY customer_city ORDER BY city_revenue DESC LIMIT 5) AS top_cities)",
+      "category": "geographic",
+      "difficulty": "very_hard",
+      "notes": "Nested subquery to identify top 5 cities, then sum their revenue. Complex query."
+    },
+    {
+      "id": 158,
+      "question": "Show me the distribution of orders by number of items",
+      "sql": "SELECT item_count, COUNT(DISTINCT order_id) AS order_count FROM (SELECT order_id, COUNT(*) AS item_count FROM order_items GROUP BY order_id) AS order_items_count GROUP BY item_count ORDER BY item_count",
+      "category": "general",
+      "difficulty": "medium",
+      "notes": "Count items per order, then group by item count. Basket size distribution."
+    },
+    {
+      "id": 159,
+      "question": "What's the average delivery time by state?",
+      "sql": "SELECT c.customer_state, AVG(EXTRACT(EPOCH FROM (o.order_delivered_customer_date - o.order_purchase_timestamp))/86400) AS avg_delivery_days FROM orders o JOIN customers c ON o.customer_id = c.customer_id WHERE o.order_delivered_customer_date IS NOT NULL GROUP BY c.customer_state ORDER BY avg_delivery_days",
+      "category": "time",
+      "difficulty": "hard",
+      "notes": "Calculate delivery time in days, average by state. Shows logistics performance."
+    },
+    {
+      "id": 160,
+      "question": "How many customers have reviewed all their orders?",
+      "sql": "SELECT COUNT(*) AS customers_review_all FROM (SELECT c.customer_unique_id, COUNT(DISTINCT o.order_id) AS order_count, COUNT(DISTINCT r.review_id) AS review_count FROM customers c JOIN orders o ON c.customer_id = o.customer_id LEFT JOIN reviews r ON o.order_id = r.order_id GROUP BY c.customer_unique_id HAVING COUNT(DISTINCT o.order_id) = COUNT(DISTINCT r.review_id) AND COUNT(DISTINCT o.order_id) > 0) AS review_all",
+      "category": "customer",
+      "difficulty": "very_hard",
+      "notes": "CRITICAL: Compare order count to review count per customer_unique_id. Perfect reviewers."
+    },
+    {
+      "id": 161,
+      "question": "What's the revenue from orders with payment value over R$1000?",
+      "sql": "SELECT SUM(oi.price) AS high_value_revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id WHERE o.order_status = 'delivered' AND o.order_id IN (SELECT order_id FROM payments GROUP BY order_id HAVING SUM(payment_value) > 1000)",
+      "category": "payment",
+      "difficulty": "hard",
+      "notes": "CRITICAL: Sum payments per order first, filter >1000, then sum item prices."
+    },
+    {
+      "id": 162,
+      "question": "Show me the top 10 products by revenue",
+      "sql": "SELECT p.product_id, ct.product_category_name_english AS category, SUM(oi.price) AS revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN products p ON oi.product_id = p.product_id JOIN category_translation ct ON p.product_category_name = ct.product_category_name WHERE o.order_status = 'delivered' AND p.product_category_name IS NOT NULL GROUP BY p.product_id, ct.product_category_name_english ORDER BY revenue DESC LIMIT 10",
+      "category": "product",
+      "difficulty": "hard",
+      "notes": "4-table join. Sum revenue per product, order descending."
+    },
+    {
+      "id": 163,
+      "question": "How many orders were placed each day of the week in 2017?",
+      "sql": "SELECT EXTRACT(DOW FROM order_purchase_timestamp) AS day_of_week, COUNT(DISTINCT order_id) AS order_count FROM orders WHERE EXTRACT(YEAR FROM order_purchase_timestamp) = 2017 GROUP BY EXTRACT(DOW FROM order_purchase_timestamp) ORDER BY day_of_week",
+      "category": "time",
+      "difficulty": "medium",
+      "notes": "DOW 0=Sunday, 1=Monday, etc. Shows 2017 weekly ordering patterns."
+    },
+    {
+      "id": 164,
+      "question": "What's the revenue per seller on average?",
+      "sql": "SELECT AVG(seller_revenue) AS avg_revenue_per_seller FROM (SELECT s.seller_id, SUM(oi.price) AS seller_revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN sellers s ON oi.seller_id = s.seller_id WHERE o.order_status = 'delivered' GROUP BY s.seller_id) AS seller_revenues",
+      "category": "seller",
+      "difficulty": "medium",
+      "notes": "Calculate revenue per seller first, then average. Subquery required."
+    },
+    {
+      "id": 165,
+      "question": "How many customers placed orders in all three years (2016, 2017, 2018)?",
+      "sql": "SELECT COUNT(*) AS customers_all_years FROM (SELECT c.customer_unique_id FROM customers c JOIN orders o ON c.customer_id = o.customer_id WHERE EXTRACT(YEAR FROM o.order_purchase_timestamp) IN (2016, 2017, 2018) GROUP BY c.customer_unique_id HAVING COUNT(DISTINCT EXTRACT(YEAR FROM o.order_purchase_timestamp)) = 3) AS active_all_years",
+      "category": "customer",
+      "difficulty": "very_hard",
+      "notes": "CRITICAL: Group by customer_unique_id, filter HAVING distinct years = 3. Most loyal customers."
+    },
+    {
+      "id": 166,
+      "question": "What's the total freight cost by category?",
+      "sql": "SELECT ct.product_category_name_english AS category, SUM(oi.freight_value) AS total_freight FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN products p ON oi.product_id = p.product_id JOIN category_translation ct ON p.product_category_name = ct.product_category_name WHERE o.order_status = 'delivered' AND p.product_category_name IS NOT NULL GROUP BY ct.product_category_name_english ORDER BY total_freight DESC",
+      "category": "product",
+      "difficulty": "hard",
+      "notes": "4-table join. Shows which categories incur highest shipping costs."
+    },
+    {
+      "id": 167,
+      "question": "Show me orders with review scores that differ by more than 2 points from the category average",
+      "sql": "SELECT r.order_id, r.review_score, ct.product_category_name_english AS category, AVG(r2.review_score) OVER (PARTITION BY ct.product_category_name_english) AS category_avg_score FROM reviews r JOIN order_items oi ON r.order_id = oi.order_id JOIN products p ON oi.product_id = p.product_id JOIN category_translation ct ON p.product_category_name = ct.product_category_name JOIN reviews r2 ON r2.order_id IN (SELECT oi2.order_id FROM order_items oi2 JOIN products p2 ON oi2.product_id = p2.product_id WHERE p2.product_category_name = p.product_category_name) WHERE p.product_category_name IS NOT NULL AND ABS(r.review_score - AVG(r2.review_score) OVER (PARTITION BY ct.product_category_name_english)) > 2",
+      "category": "review",
+      "difficulty": "very_hard",
+      "notes": "Window function with PARTITION BY. Find outlier reviews. Very complex query."
+    },
+    {
+      "id": 168,
+      "question": "How many orders used exactly 3 payment installments?",
+      "sql": "SELECT COUNT(DISTINCT order_id) AS three_installment_orders FROM payments WHERE payment_installments = 3",
+      "category": "payment",
+      "difficulty": "easy",
+      "notes": "Filter by specific installment count. Common installment plan."
+    },
+    {
+      "id": 169,
+      "question": "What's the revenue from Brasília (capital city)?",
+      "sql": "SELECT SUM(oi.price) AS brasilia_revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN customers c ON o.customer_id = c.customer_id WHERE o.order_status = 'delivered' AND LOWER(c.customer_city) = 'brasilia'",
+      "category": "geographic",
+      "difficulty": "medium",
+      "notes": "Use LOWER() for city matching. Capital city analysis."
+    },
+    {
+      "id": 170,
+      "question": "Show me the percentage of revenue by category",
+      "sql": "SELECT ct.product_category_name_english AS category, (SUM(oi.price) * 100.0 / (SELECT SUM(oi2.price) FROM order_items oi2 JOIN orders o2 ON oi2.order_id = o2.order_id WHERE o2.order_status = 'delivered')) AS revenue_percentage FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN products p ON oi.product_id = p.product_id JOIN category_translation ct ON p.product_category_name = ct.product_category_name WHERE o.order_status = 'delivered' AND p.product_category_name IS NOT NULL GROUP BY ct.product_category_name_english ORDER BY revenue_percentage DESC",
+      "category": "product",
+      "difficulty": "very_hard",
+      "notes": "Calculate each category's revenue as % of total. Complex nested aggregation."
+    },
+    {
+      "id": 171,
+      "question": "How many sellers have average review scores below 3?",
+      "sql": "SELECT COUNT(*) AS low_rated_sellers FROM (SELECT s.seller_id, AVG(r.review_score) AS avg_score FROM reviews r JOIN order_items oi ON r.order_id = oi.order_id JOIN sellers s ON oi.seller_id = s.seller_id GROUP BY s.seller_id HAVING AVG(r.review_score) < 3) AS poor_sellers",
+      "category": "seller",
+      "difficulty": "hard",
+      "notes": "Calculate avg score per seller, filter HAVING < 3. Poor performing sellers."
+    },
+    {
+      "id": 172,
+      "question": "What's the average order value for orders with freight over R$20?",
+      "sql": "SELECT AVG(order_total) AS avg_order_value FROM (SELECT o.order_id, SUM(p.payment_value) AS order_total FROM orders o JOIN payments p ON o.order_id = p.order_id WHERE o.order_status = 'delivered' AND o.order_id IN (SELECT order_id FROM order_items GROUP BY order_id HAVING SUM(freight_value) > 20) GROUP BY o.order_id) AS high_freight_orders",
+      "category": "multi_complex",
+      "difficulty": "very_hard",
+      "notes": "CRITICAL: Filter by freight total first, then calculate order value. Complex nested query."
+    },
+    {
+      "id": 173,
+      "question": "Show me the number of orders by month across all years",
+      "sql": "SELECT EXTRACT(MONTH FROM order_purchase_timestamp) AS month, COUNT(DISTINCT order_id) AS order_count FROM orders GROUP BY EXTRACT(MONTH FROM order_purchase_timestamp) ORDER BY month",
+      "category": "time",
+      "difficulty": "medium",
+      "notes": "Aggregate across all years. Shows seasonal patterns (Jan-Dec)."
+    },
+    {
+      "id": 174,
+      "question": "What's the total value of canceled orders?",
+      "sql": "SELECT SUM(p.payment_value) AS canceled_value FROM payments p JOIN orders o ON p.order_id = o.order_id WHERE o.order_status = 'canceled'",
+      "category": "general",
+      "difficulty": "easy",
+      "notes": "Sum payment value for canceled orders. Lost revenue."
+    },
+    {
+      "id": 175,
+      "question": "How many unique products are in each state's orders?",
+      "sql": "SELECT c.customer_state, COUNT(DISTINCT oi.product_id) AS unique_products FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN customers c ON o.customer_id = c.customer_id GROUP BY c.customer_state ORDER BY unique_products DESC",
+      "category": "geographic",
+      "difficulty": "medium",
+      "notes": "Count distinct products purchased per state. Product diversity by region."
+    },
+    {
+      "id": 176,
+      "question": "What's the revenue from customers who used credit cards exclusively?",
+      "sql": "SELECT SUM(oi.price) AS credit_card_only_revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id WHERE o.order_status = 'delivered' AND o.order_id IN (SELECT order_id FROM payments GROUP BY order_id HAVING COUNT(DISTINCT payment_type) = 1 AND MAX(payment_type) = 'credit_card')",
+      "category": "payment",
+      "difficulty": "hard",
+      "notes": "Filter orders with only credit card payment (no mixed methods)."
+    },
+    {
+      "id": 177,
+      "question": "Show me the top 3 sellers by number of 5-star reviews",
+      "sql": "SELECT s.seller_id, s.seller_city, s.seller_state, COUNT(*) AS five_star_count FROM reviews r JOIN order_items oi ON r.order_id = oi.order_id JOIN sellers s ON oi.seller_id = s.seller_id WHERE r.review_score = 5 GROUP BY s.seller_id, s.seller_city, s.seller_state ORDER BY five_star_count DESC LIMIT 3",
+      "category": "seller",
+      "difficulty": "medium",
+      "notes": "Filter 5-star reviews, count by seller. Top rated sellers."
+    },
+    {
+      "id": 178,
+      "question": "What's the average number of items per order by state?",
+      "sql": "SELECT c.customer_state, AVG(item_count) AS avg_items_per_order FROM (SELECT o.order_id, c.customer_state, COUNT(*) AS item_count FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN customers c ON o.customer_id = c.customer_id GROUP BY o.order_id, c.customer_state) AS order_items_by_state GROUP BY customer_state ORDER BY avg_items_per_order DESC",
+      "category": "geographic",
+      "difficulty": "hard",
+      "notes": "Count items per order first, then average by state. Basket size by region."
+    },
+    {
+      "id": 179,
+      "question": "How many orders have review comments?",
+      "sql": "SELECT COUNT(DISTINCT order_id) AS orders_with_comments FROM reviews WHERE review_comment_message IS NOT NULL",
+      "category": "review",
+      "difficulty": "easy",
+      "notes": "Filter non-NULL comments. About 41% of reviews have written feedback."
+    },
+    {
+      "id": 180,
+      "question": "What's the revenue by payment type and state?",
+      "sql": "SELECT c.customer_state, p.payment_type, SUM(oi.price) AS revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN customers c ON o.customer_id = c.customer_id JOIN payments p ON o.order_id = p.order_id WHERE o.order_status = 'delivered' GROUP BY c.customer_state, p.payment_type ORDER BY revenue DESC",
+      "category": "multi_complex",
+      "difficulty": "hard",
+      "notes": "4-table join. Multi-dimensional: state + payment type."
+    },
+    {
+      "id": 181,
+      "question": "Show me revenue from orders with more than 5 items",
+      "sql": "SELECT SUM(oi.price) AS large_order_revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id WHERE o.order_status = 'delivered' AND oi.order_id IN (SELECT order_id FROM order_items GROUP BY order_id HAVING COUNT(*) > 5)",
+      "category": "revenue",
+      "difficulty": "medium",
+      "notes": "Filter orders with >5 items using subquery. Large basket analysis."
+    },
+    {
+      "id": 182,
+      "question": "What's the most common review score?",
+      "sql": "SELECT review_score, COUNT(*) AS review_count FROM reviews GROUP BY review_score ORDER BY review_count DESC LIMIT 1",
+      "category": "review",
+      "difficulty": "easy",
+      "notes": "Group by score, order by count descending. Most frequent rating."
+    },
+    {
+      "id": 183,
+      "question": "How many customers made their last purchase in 2016?",
+      "sql": "SELECT COUNT(DISTINCT customer_unique_id) AS customers_last_2016 FROM (SELECT c.customer_unique_id, MAX(o.order_purchase_timestamp) AS last_purchase FROM customers c JOIN orders o ON c.customer_id = o.customer_id GROUP BY c.customer_unique_id) AS last_purchases WHERE EXTRACT(YEAR FROM last_purchase) = 2016",
+      "category": "customer",
+      "difficulty": "hard",
+      "notes": "CRITICAL: Find MAX(order date) per customer_unique_id, filter by year. Churned customers."
+    },
+    {
+      "id": 184,
+      "question": "What's the revenue from the sports_leisure category?",
+      "sql": "SELECT SUM(oi.price) AS sports_revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN products p ON oi.product_id = p.product_id JOIN category_translation ct ON p.product_category_name = ct.product_category_name WHERE o.order_status = 'delivered' AND ct.product_category_name_english = 'sports_leisure'",
+      "category": "product",
+      "difficulty": "hard",
+      "notes": "4-table join. Filter by specific English category name."
+    },
+    {
+      "id": 185,
+      "question": "Show me sellers who have never received a 1-star review",
+      "sql": "SELECT s.seller_id, s.seller_city, s.seller_state FROM sellers s WHERE s.seller_id NOT IN (SELECT DISTINCT oi.seller_id FROM reviews r JOIN order_items oi ON r.order_id = oi.order_id WHERE r.review_score = 1)",
+      "category": "seller",
+      "difficulty": "medium",
+      "notes": "Use NOT IN to exclude sellers with 1-star reviews. High quality sellers."
+    },
+    {
+      "id": 186,
+      "question": "What's the average order value by quarter in 2017?",
+      "sql": "SELECT EXTRACT(QUARTER FROM o.order_purchase_timestamp) AS quarter, AVG(order_total) AS avg_order_value FROM (SELECT o.order_id, o.order_purchase_timestamp, SUM(p.payment_value) AS order_total FROM orders o JOIN payments p ON o.order_id = p.order_id WHERE o.order_status = 'delivered' AND EXTRACT(YEAR FROM o.order_purchase_timestamp) = 2017 GROUP BY o.order_id, o.order_purchase_timestamp) AS order_values GROUP BY EXTRACT(QUARTER FROM order_purchase_timestamp) ORDER BY quarter",
+      "category": "time",
+      "difficulty": "very_hard",
+      "notes": "CRITICAL: Calculate order total first (SUM payments), then average by quarter. Complex nested query."
+    },
+    {
+      "id": 187,
+      "question": "How many products have been sold more than 100 times?",
+      "sql": "SELECT COUNT(*) AS popular_products FROM (SELECT product_id FROM order_items GROUP BY product_id HAVING COUNT(DISTINCT order_id) > 100) AS high_volume_products",
+      "category": "product",
+      "difficulty": "medium",
+      "notes": "Count orders per product, filter HAVING > 100. Best sellers."
+    },
+    {
+      "id": 188,
+      "question": "What's the total revenue from orders that were delivered late?",
+      "sql": "SELECT SUM(oi.price) AS late_delivery_revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id WHERE o.order_status = 'delivered' AND o.order_delivered_customer_date > o.order_estimated_delivery_date",
+      "category": "time",
+      "difficulty": "medium",
+      "notes": "Filter where actual delivery > estimated. Revenue from delayed orders."
+    },
+    {
+      "id": 189,
+      "question": "Show me payment method usage by state",
+      "sql": "SELECT c.customer_state, p.payment_type, COUNT(DISTINCT p.order_id) AS order_count FROM payments p JOIN orders o ON p.order_id = o.order_id JOIN customers c ON o.customer_id = c.customer_id GROUP BY c.customer_state, p.payment_type ORDER BY c.customer_state, order_count DESC",
+      "category": "geographic",
+      "difficulty": "medium",
+      "notes": "3-table join. Shows payment preferences by region."
+    },
+    {
+      "id": 190,
+      "question": "What's the revenue from orders with no reviews?",
+      "sql": "SELECT SUM(oi.price) AS no_review_revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id WHERE o.order_status = 'delivered' AND o.order_id NOT IN (SELECT DISTINCT order_id FROM reviews)",
+      "category": "revenue",
+      "difficulty": "medium",
+      "notes": "Use NOT IN to find orders without reviews. Silent customers."
+    },
+    {
+      "id": 191,
+      "question": "How many customers spent between R$100 and R$500 total?",
+      "sql": "SELECT COUNT(*) AS mid_value_customers FROM (SELECT c.customer_unique_id, SUM(p.payment_value) AS total_spent FROM customers c JOIN orders o ON c.customer_id = o.customer_id JOIN payments p ON o.order_id = p.order_id WHERE o.order_status = 'delivered' GROUP BY c.customer_unique_id HAVING SUM(p.payment_value) BETWEEN 100 AND 500) AS mid_spenders",
+      "category": "customer",
+      "difficulty": "hard",
+      "notes": "CRITICAL: Group by customer_unique_id, filter HAVING BETWEEN. Customer segmentation."
+    },
+    {
+      "id": 192,
+      "question": "What's the average freight cost by state?",
+      "sql": "SELECT c.customer_state, AVG(order_freight) AS avg_freight FROM (SELECT o.order_id, c.customer_state, SUM(oi.freight_value) AS order_freight FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN customers c ON o.customer_id = c.customer_id WHERE o.order_status = 'delivered' GROUP BY o.order_id, c.customer_state) AS order_freights GROUP BY customer_state ORDER BY avg_freight DESC",
+      "category": "geographic",
+      "difficulty": "hard",
+      "notes": "Sum freight per order first, then average by state. Shipping costs by region."
+    },
+    {
+      "id": 193,
+      "question": "Show me the edge case: orders with product names in dataset",
+      "sql": "SELECT COUNT(DISTINCT oi.order_id) AS orders_with_product_names FROM order_items oi WHERE oi.product_id IN (SELECT product_id FROM products WHERE product_name_lenght IS NOT NULL)",
+      "category": "edge_case",
+      "difficulty": "medium",
+      "notes": "EDGE CASE: Product names were removed for privacy. This query would return 0 if checked for actual names. Tests understanding of data limitations."
+    },
+    {
+      "id": 194,
+      "question": "What's the revenue for impossible query: iPhone sales",
+      "sql": "SELECT SUM(oi.price) AS iphone_revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN products p ON oi.product_id = p.product_id WHERE o.order_status = 'delivered' AND p.product_id IN (SELECT product_id FROM products WHERE product_name_lenght IS NULL)",
+      "category": "edge_case",
+      "difficulty": "medium",
+      "notes": "EDGE CASE: Product names don't exist in dataset. This is an impossible query - should return error or explain data unavailable."
+    },
+    {
+      "id": 195,
+      "question": "How many orders have been returned?",
+      "sql": "SELECT COUNT(DISTINCT order_id) AS returned_orders FROM orders WHERE order_status = 'returned'",
+      "category": "edge_case",
+      "difficulty": "easy",
+      "notes": "EDGE CASE: 'returned' status doesn't exist in this dataset. Returns 0. Tests edge case handling."
+    },
+    {
+      "id": 196,
+      "question": "What's the revenue in future dates (2025)?",
+      "sql": "SELECT SUM(oi.price) AS future_revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id WHERE o.order_status = 'delivered' AND EXTRACT(YEAR FROM o.order_purchase_timestamp) = 2025",
+      "category": "edge_case",
+      "difficulty": "easy",
+      "notes": "EDGE CASE: Data ends in 2018. Future dates return 0. Tests temporal data boundaries."
+    },
+    {
+      "id": 197,
+      "question": "Show me orders where payment value differs from item total by more than R$10",
+      "sql": "SELECT o.order_id, SUM(oi.price) AS item_total, SUM(p.payment_value) AS payment_total, ABS(SUM(oi.price) - SUM(p.payment_value)) AS difference FROM orders o JOIN order_items oi ON o.order_id = oi.order_id JOIN payments p ON o.order_id = p.order_id WHERE o.order_status = 'delivered' GROUP BY o.order_id HAVING ABS(SUM(oi.price) - SUM(p.payment_value)) > 10 ORDER BY difference DESC",
+      "category": "multi_complex",
+      "difficulty": "very_hard",
+      "notes": "CRITICAL: Compare item prices vs payment values. Identifies discrepancies (vouchers, freight). Complex aggregation."
+    },
+    {
+      "id": 198,
+      "question": "What's the retention rate from 2017 to 2018?",
+      "sql": "SELECT (COUNT(DISTINCT CASE WHEN has_2018 = 1 THEN customer_unique_id END) * 100.0 / COUNT(DISTINCT customer_unique_id)) AS retention_rate FROM (SELECT c.customer_unique_id, MAX(CASE WHEN EXTRACT(YEAR FROM o.order_purchase_timestamp) = 2018 THEN 1 ELSE 0 END) AS has_2018 FROM customers c JOIN orders o ON c.customer_id = o.customer_id WHERE EXTRACT(YEAR FROM o.order_purchase_timestamp) IN (2017, 2018) GROUP BY c.customer_unique_id HAVING MIN(EXTRACT(YEAR FROM o.order_purchase_timestamp)) = 2017) AS retention_calc",
+      "category": "customer",
+      "difficulty": "very_hard",
+      "notes": "CRITICAL: Find 2017 customers who returned in 2018. Complex retention calculation using customer_unique_id."
+    },
+    {
+      "id": 199,
+      "question": "Show me the complete order analysis: customer, products, payments, reviews for high-value orders",
+      "sql": "SELECT o.order_id, c.customer_state, ct.product_category_name_english AS category, SUM(oi.price) AS item_total, SUM(p.payment_value) AS payment_total, AVG(r.review_score) AS avg_review FROM orders o JOIN customers c ON o.customer_id = c.customer_id JOIN order_items oi ON o.order_id = oi.order_id JOIN products pr ON oi.product_id = pr.product_id JOIN category_translation ct ON pr.product_category_name = ct.product_category_name JOIN payments p ON o.order_id = p.order_id LEFT JOIN reviews r ON o.order_id = r.order_id WHERE o.order_status = 'delivered' AND pr.product_category_name IS NOT NULL GROUP BY o.order_id, c.customer_state, ct.product_category_name_english HAVING SUM(p.payment_value) > 500 ORDER BY payment_total DESC",
+      "category": "multi_complex",
+      "difficulty": "very_hard",
+      "notes": "5-table join with LEFT JOIN for reviews. Multi-dimensional analysis. Maximum complexity query."
+    },
+    {
+      "id": 200,
+      "question": "What's the complete business summary: revenue, customers, orders, average values",
+      "sql": "SELECT COUNT(DISTINCT o.order_id) AS total_orders, COUNT(DISTINCT c.customer_unique_id) AS unique_customers, SUM(oi.price) AS total_revenue, AVG(order_total) AS avg_order_value, SUM(oi.freight_value) AS total_freight FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN customers c ON o.customer_id = c.customer_id JOIN (SELECT order_id, SUM(payment_value) AS order_total FROM payments GROUP BY order_id) AS order_totals ON o.order_id = order_totals.order_id WHERE o.order_status = 'delivered'",
+      "category": "multi_complex",
+      "difficulty": "very_hard",
+      "notes": "CRITICAL: Complete business KPIs in one query. Uses customer_unique_id, sums payments properly. Comprehensive analysis."
+    }
+  ]
+}

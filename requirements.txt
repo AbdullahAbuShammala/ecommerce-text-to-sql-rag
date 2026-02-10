@@ -1,0 +1,39 @@
+# Core Data Science
+pandas
+numpy
+jupyter
+matplotlib
+seaborn
+
+# Database
+psycopg2-binary
+sqlalchemy
+
+# LLM and LangChain
+langchain
+langchain-community
+langchain-experimental
+langchain-classic
+ollama
+
+# Embeddings and Vector Store
+sentence-transformers
+chromadb
+langchain-chroma
+
+
+# Language Detection
+langdetect
+
+# Arabic Support (optional for translation)
+deep-translator
+
+# Web Interface
+streamlit
+fastapi
+uvicorn
+
+# Utilities
+python-dotenv
+pydantic
+requests
