@@ -213,3 +213,7 @@ data/raw/
 
 chroma_db/
 *.chroma
+
+# Mac system files
+.DS_Store
+**/.DS_Store
